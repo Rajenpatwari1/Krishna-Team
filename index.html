@@ -17,15 +17,16 @@
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        primary: { 50: '#FDFBF8', 100: '#F6EFDF', 400: '#D8B88C', 500: '#C6A675', 600: '#B08F5D', 700: '#8C6F44', 900: '#523E21' },
-                        success: { 50: '#F0F4EC', 500: '#71875D', 600: '#5B6F49', 700: '#445436' },
-                        danger: { 50: '#FCF1EF', 500: '#D07567', 600: '#BA5949', 700: '#914134' },
-                        slate: { 50: '#FAF8F5', 100: '#EFECE7', 200: '#E3DCD3', 300: '#C9C0B3', 400: '#A89E90', 500: '#8A8175', 600: '#696156', 700: '#4D473E', 800: '#2E2B25', 900: '#1A1815' }
+                        primary: { 50: '#eff6ff', 100: '#dbeafe', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a8a' },
+                        success: { 50: '#ecfdf5', 200: '#a7f3d0', 500: '#10b981', 600: '#059669', 700: '#047857' },
+                        danger: { 50: '#fef2f2', 200: '#fecaca', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c' },
+                        amber: { 50: '#fffbeb', 200: '#fde68a', 500: '#f59e0b', 600: '#d97706', 700: '#b45309' },
+                        slate: { 50: '#F8FAFC', 100: '#F1F5F9', 200: '#E2E8F0', 300: '#CBD5E1', 400: '#94A3B8', 500: '#64748B', 600: '#475569', 700: '#334155', 800: '#1E293B', 900: '#0F172A' }
                     },
                     boxShadow: {
-                        'subtle': '0 1px 2px 0 rgba(26, 24, 21, 0.05)',
-                        'elevated': '0 4px 6px -1px rgba(26, 24, 21, 0.05), 0 2px 4px -1px rgba(26, 24, 21, 0.03)',
-                        'floating': '0 10px 15px -3px rgba(26, 24, 21, 0.08), 0 4px 6px -2px rgba(26, 24, 21, 0.04)'
+                        'subtle': '0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 0 rgba(255, 255, 255, 0.5) inset',
+                        'elevated': '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025), 0 0 0 1px rgba(0, 0, 0, 0.02)',
+                        'floating': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
                     }
                 }
             }
@@ -40,12 +41,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        body { background-color: #FAF8F5; color: #1A1815; -webkit-font-smoothing: antialiased; }
+        body { background-color: #F8FAFC; color: #0F172A; -webkit-font-smoothing: antialiased; }
         
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #C9C0B3; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #A89E90; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
         
         /* Table enhancements */
         .data-table th { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px); }
@@ -77,14 +78,16 @@
         
         const getStatusColor = (percent) => {
             if (percent >= 100) return 'text-success-600';
-            if (percent >= 85) return 'text-amber-600';
+            if (percent >= 71) return 'text-primary-600';
+            if (percent >= 31) return 'text-amber-600';
             return 'text-danger-600';
         };
 
         const getStatusBadge = (percent) => {
-            if (percent >= 100) return 'bg-success-50 text-success-700 border-success-200';
-            if (percent >= 85) return 'bg-amber-50 text-amber-700 border-amber-200';
-            return 'bg-danger-50 text-danger-700 border-danger-200';
+            if (percent >= 100) return 'bg-success-50 text-success-700 border-success-200 shadow-sm';
+            if (percent >= 71) return 'bg-primary-50 text-primary-700 border-primary-200 shadow-sm';
+            if (percent >= 31) return 'bg-amber-50 text-amber-700 border-amber-200 shadow-sm';
+            return 'bg-danger-50 text-danger-700 border-danger-200 shadow-sm';
         };
 
         const parseCSV = (csvText) => {
@@ -120,10 +123,10 @@
         };
 
         const Card = ({ children, className = "", title, action }) => (
-            <div className={`bg-white rounded-xl border border-slate-200 shadow-subtle flex flex-col h-full ${className}`}>
+            <div className={`bg-white rounded-xl border border-slate-200 shadow-subtle flex flex-col h-full overflow-hidden ${className}`}>
                 {(title || action) && (
-                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-xl">
-                        <h3 className="text-[13px] font-semibold text-slate-700 uppercase tracking-wider">{title}</h3>
+                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+                        <h3 className="text-[14px] font-bold text-slate-800 tracking-wide">{title}</h3>
                         {action && <div>{action}</div>}
                     </div>
                 )}
@@ -138,23 +141,24 @@
             
             const iconStyles = {
                 neutral: 'bg-slate-100 text-slate-600',
-                success: 'bg-success-50 text-success-600',
-                danger: 'bg-danger-50 text-danger-600',
-                primary: 'bg-primary-50 text-primary-600'
+                success: 'bg-success-50 text-success-600 ring-1 ring-success-200/50',
+                danger: 'bg-danger-50 text-danger-600 ring-1 ring-danger-200/50',
+                primary: 'bg-primary-50 text-primary-600 ring-1 ring-primary-200/50'
             };
 
             return (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-subtle p-5 flex flex-col justify-between group hover:border-slate-300 transition-colors">
-                    <div className="flex justify-between items-start mb-3">
-                        <p className="text-[13px] font-medium text-slate-500">{title}</p>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-subtle p-5 flex flex-col justify-between group hover:shadow-elevated hover:border-slate-300 transition-all duration-300 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent to-transparent group-hover:from-primary-400 group-hover:to-primary-600 transition-all opacity-0 group-hover:opacity-100"></div>
+                    <div className="flex justify-between items-start mb-4">
+                        <p className="text-[12px] font-bold text-slate-500 uppercase tracking-wider">{title}</p>
                         <div className={`p-2 rounded-lg ${iconStyles[status]}`}>
-                            <Icon name={icon} size={16} />
+                            <Icon name={icon} size={18} />
                         </div>
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{formattedValue}</h2>
+                        <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{formattedValue}</h2>
                         {subtext && (
-                            <p className="mt-1 text-[13px] font-medium text-slate-500 flex items-center">
+                            <p className="mt-2.5 text-[12px] font-semibold text-slate-600 inline-flex items-center bg-slate-100/80 px-2.5 py-1 rounded-md border border-slate-200/60">
                                 {subtext}
                             </p>
                         )}
@@ -163,22 +167,31 @@
             );
         };
 
-        const HallOfFameCard = ({ title, name, subtitle, icon, isDark = false }) => (
-            <div className={`rounded-xl border shadow-subtle p-5 flex flex-col justify-between relative overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900 group hover:border-slate-300 transition-colors'}`}>
-                <div className={`absolute -right-4 -top-4 p-4 opacity-5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    <Icon name={icon} size={120} />
-                </div>
-                <div className="relative z-10">
-                    <div className={`flex items-center text-[11px] font-bold uppercase tracking-wider mb-4 ${isDark ? 'text-primary-400' : 'text-primary-600'}`}>
-                        <Icon name="Star" size={12} className="mr-1.5" /> {title}
+        const HallOfFameCard = ({ title, name, subtitle, icon, theme = 'dark' }) => {
+            const themes = {
+                dark: 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-800 text-white shadow-elevated',
+                primary: 'bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 border-primary-700 text-white shadow-elevated',
+            };
+            const activeTheme = themes[theme] || themes.dark;
+            
+            return (
+                <div className={`rounded-xl border p-5 flex flex-col justify-between relative overflow-hidden transition-all duration-300 group hover:-translate-y-1 ${activeTheme}`}>
+                    <div className="absolute top-0 left-0 w-full h-1 bg-white/20"></div>
+                    <div className={`absolute -right-4 -top-4 p-4 opacity-10 text-white transform group-hover:scale-125 group-hover:rotate-12 transition-all duration-500`}>
+                        <Icon name={icon} size={130} />
                     </div>
-                    <h3 className={`text-xl font-bold truncate mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>{name || 'Evaluating...'}</h3>
-                    <div className={`inline-flex items-center px-2 py-1 rounded text-[12px] font-medium ${isDark ? 'bg-white/10 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
-                        {subtitle}
+                    <div className="relative z-10">
+                        <div className={`flex items-center text-[11px] font-bold uppercase tracking-wider mb-5 text-white/80`}>
+                            <Icon name="Star" size={13} className="mr-1.5 text-amber-300" /> {title}
+                        </div>
+                        <h3 className={`text-2xl font-bold truncate mb-1.5 text-white tracking-tight`}>{name || 'Evaluating...'}</h3>
+                        <div className={`inline-flex items-center px-2.5 py-1 rounded-md text-[12px] font-semibold bg-white/20 text-white backdrop-blur-md border border-white/10 shadow-sm`}>
+                            {subtitle}
+                        </div>
                     </div>
                 </div>
-            </div>
-        );
+            );
+        };
 
         const ChartComponent = ({ type, data, options, height = "250px" }) => {
             const canvasRef = useRef(null);
@@ -330,8 +343,8 @@
             const managerChartData = {
                 labels: managerStats.map(m => m.name.split(' ')[0]),
                 datasets: [
-                    { label: 'Achieved (₹)', data: managerStats.map(m => m.achieved), backgroundColor: '#C6A675', borderRadius: 4, barPercentage: 0.5 },
-                    { label: 'Target (₹)', data: managerStats.map(m => m.target), backgroundColor: '#E3DCD3', borderRadius: 4, barPercentage: 0.5 }
+                    { label: 'Achieved (₹)', data: managerStats.map(m => m.achieved), backgroundColor: '#4f46e5', borderRadius: 4, barPercentage: 0.5 },
+                    { label: 'Target (₹)', data: managerStats.map(m => m.target), backgroundColor: '#e2e8f0', borderRadius: 4, barPercentage: 0.5 }
                 ]
             };
 
@@ -339,38 +352,41 @@
                 labels: ['Achieved', 'Shortfall'],
                 datasets: [{
                     data: kpis ? [kpis.totalAchieved, Math.max(0, kpis.totalTarget - kpis.totalAchieved)] : [0, 1],
-                    backgroundColor: ['#71875D', '#E3DCD3'],
+                    backgroundColor: ['#10B981', '#F1F5F9'],
                     borderWidth: 0, cutout: '80%'
                 }]
             };
 
             return (
-                <div className="min-h-screen pb-12">
-                    {/* Top Header Row - Crisp & Clean */}
-                    <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+                <div className="min-h-screen pb-12 bg-slate-50">
+                    {/* Top Header Row - Dark Enterprise Theme */}
+                    <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
                         <div className="px-6 h-16 flex justify-between items-center max-w-[1600px] mx-auto">
                             <div className="flex items-center space-x-3">
+                                <div className="bg-primary-600 p-1.5 rounded-lg">
+                                    <Icon name="Activity" size={18} className="text-white" />
+                                </div>
                                 <div>
-                                    <h1 className="text-[16px] font-bold text-slate-900 tracking-tight leading-tight">Team Sales Dashboard</h1>
+                                    <h1 className="text-[17px] font-bold text-white tracking-tight leading-tight">Team Sales Dashboard</h1>
                                 </div>
                             </div>
                             <div className="flex items-center space-x-4">
-                                <div className="flex items-center text-[12px] font-medium text-slate-500 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100">
+                                <div className="flex items-center text-[12px] font-medium text-slate-300 bg-slate-800 px-3 py-1.5 rounded-md border border-slate-700 shadow-inner">
                                     <div className="h-1.5 w-1.5 rounded-full bg-success-500 mr-2 animate-pulse"></div>
                                     Sync: {lastSynced.toLocaleTimeString()}
                                 </div>
-                                <button onClick={() => fetchData(true)} disabled={isRefreshing} className="text-slate-500 hover:text-slate-900 transition-colors p-2">
-                                    <Icon name="RefreshCw" size={16} className={isRefreshing ? 'animate-spin text-primary-600' : ''} />
+                                <button onClick={() => fetchData(true)} disabled={isRefreshing} className="text-slate-400 hover:text-white transition-colors p-2">
+                                    <Icon name="RefreshCw" size={16} className={isRefreshing ? 'animate-spin text-primary-400' : ''} />
                                 </button>
-                                <button onClick={() => setSettingsOpen(true)} className="text-slate-500 hover:text-slate-900 transition-colors p-2"><Icon name="Settings" size={16} /></button>
+                                <button onClick={() => setSettingsOpen(true)} className="text-slate-400 hover:text-white transition-colors p-2"><Icon name="Settings" size={16} /></button>
                             </div>
                         </div>
                     </header>
 
                     {/* Secondary Toolbar - Filters */}
-                    <div className="bg-slate-50 border-b border-slate-200 shadow-sm mb-8">
-                        <div className="px-6 py-3 max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-4">
-                            <div className="flex items-center space-x-6 text-[13px]">
+                    <div className="bg-white border-b border-slate-200 shadow-subtle mb-8">
+                        <div className="max-w-[1600px] mx-auto px-6 h-14 flex items-center justify-between">
+                            <div className="flex items-center space-x-6">
                                 <div className="flex items-center">
                                     <span className="font-semibold text-slate-600 mr-3"><Icon name="Calendar" size={14} className="mr-1 inline text-slate-400"/> Period:</span>
                                     <div className="flex bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
@@ -408,8 +424,8 @@
                                     
                                     {/* Hall of Fame */}
                                     <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                        <HallOfFameCard isDark={true} title="Top Manager" name={kpis.topManager?.name} subtitle={`Achieved: ${formatPercent(kpis.topManager?.pct)}`} icon="Award" />
-                                        <HallOfFameCard isDark={false} title="Top BDE Performer" name={kpis.topBDE?.name} subtitle={`Achieved: ${formatPercent(kpis.topBDE?.pct)}`} icon="TrendingUp" />
+                                        <HallOfFameCard theme="dark" title="Top Manager" name={kpis.topManager?.name} subtitle={`Achieved: ${formatPercent(kpis.topManager?.pct)}`} icon="Award" />
+                                        <HallOfFameCard theme="primary" title="Top BDE Performer" name={kpis.topBDE?.name} subtitle={`Achieved: ${formatPercent(kpis.topBDE?.pct)}`} icon="TrendingUp" />
                                     </div>
                                 </div>
 
@@ -443,29 +459,23 @@
 
                                 {}
                                 <Card title="BDE Execution Data Grid" action={
-                                    <div className="flex items-center space-x-3">
-                                        <div className="relative">
-                                            <Icon name="Search" size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-                                            <input type="text" placeholder="Search BDE..." className="pl-8 pr-3 py-1.5 border border-slate-200 rounded bg-slate-50 text-[13px] focus:outline-none focus:ring-1 ring-primary-500 focus:bg-white w-60 transition-colors" value={filters.search} onChange={(e) => setFilters({...filters, search: e.target.value})} />
-                                        </div>
-                                        <button onClick={handleExport} className="flex items-center px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded text-[13px] font-medium transition-colors">
-                                            <Icon name="Download" size={14} className="mr-1.5" /> Export
-                                        </button>
+                                    <div className="relative">
+                                        <Icon name="Search" size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                                        <input type="text" placeholder="Search BDE..." className="pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50 text-[13px] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white w-64 transition-all shadow-sm" value={filters.search} onChange={(e) => setFilters({...filters, search: e.target.value})} />
                                     </div>
                                 }>
-                                    <div className="overflow-x-auto custom-scrollbar border border-slate-200 rounded-lg">
+                                    <div className="overflow-x-auto custom-scrollbar border border-slate-200 rounded-lg shadow-sm">
                                         <table className="w-full text-left border-collapse data-table whitespace-nowrap">
-                                            <thead className="bg-slate-50 text-[11px] text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                                            <thead className="bg-slate-100/50 text-[11px] text-slate-500 uppercase tracking-wider font-bold border-b border-slate-200">
                                                 <tr>
                                                     <th className="px-4 py-3 border-r border-slate-100">BDE Name</th>
                                                     <th className="px-4 py-3 border-r border-slate-100">Manager</th>
                                                     <th className="px-4 py-3 border-r border-slate-100 text-right">Target</th>
                                                     <th className="px-4 py-3 border-r border-slate-100 text-right">Achieved</th>
                                                     <th className="px-4 py-3 border-r border-slate-100 text-center">Achievement %</th>
+                                                    <th className="px-4 py-3 border-r border-slate-100 text-right">Daily Run Rate</th>
                                                     <th className="px-4 py-3 border-r border-slate-100 text-right">Expected Sales</th>
                                                     <th className="px-4 py-3 border-r border-slate-100 text-right">Shortfall</th>
-                                                    <th className="px-4 py-3 border-r border-slate-100 text-right">Current RR</th>
-                                                    <th className="px-4 py-3 border-r border-slate-100 text-right">Required RR</th>
                                                     <th className="px-4 py-3 text-center">Status</th>
                                                 </tr>
                                             </thead>
@@ -474,43 +484,41 @@
                                                     const target = Number(row.Target) || 0;
                                                     const achieved = Number(row['Sales Achieved']) || 0;
                                                     
-                                                    // Auto-Calculate Achievement % (Fallback if sheet data is weird)
+                                                    // Auto-Calculate Achievement %
                                                     const pct = target > 0 ? (achieved / target) * 100 : 0;
                                                     
-                                                    // Auto-Calculate Shortfall automatically (ignores sheet column entirely)
+                                                    // Auto-Calculate Shortfall automatically
                                                     const shortfallVal = Math.max(0, target - achieved);
 
-                                                    // Fetch the extra metrics from your specific columns
+                                                    // Fetch expected sales
                                                     const expected = Number(row['Expected Sales']) || 0;
-                                                    const revReq = Number(row['Revenue Required']) || 0;
 
                                                     return (
-                                                        <tr key={idx} className="transition-colors group">
-                                                            <td className="px-4 py-3 font-medium text-slate-900 border-r border-slate-50">{row['Employee Name'] || '-'}</td>
-                                                            <td className="px-4 py-3 text-slate-500 border-r border-slate-50">{row['Manager Name'] || '-'}</td>
-                                                            <td className="px-4 py-3 text-right font-mono text-slate-500 border-r border-slate-50">{formatCurrency(target)}</td>
-                                                            <td className="px-4 py-3 text-right font-mono font-semibold text-slate-900 border-r border-slate-50">{formatCurrency(achieved)}</td>
-                                                            <td className="px-4 py-3 border-r border-slate-50">
+                                                        <tr key={idx} className="transition-colors group hover:bg-slate-50">
+                                                            <td className="px-4 py-3 font-medium text-slate-900 border-r border-slate-100">{row['Employee Name'] || '-'}</td>
+                                                            <td className="px-4 py-3 text-slate-500 border-r border-slate-100">{row['Manager Name'] || '-'}</td>
+                                                            <td className="px-4 py-3 text-right font-mono text-slate-500 border-r border-slate-100">{formatCurrency(target)}</td>
+                                                            <td className="px-4 py-3 text-right font-mono font-semibold text-slate-900 border-r border-slate-100">{formatCurrency(achieved)}</td>
+                                                            <td className="px-4 py-3 border-r border-slate-100">
                                                                 <div className="flex items-center justify-end">
                                                                     <span className={`font-mono font-semibold ${getStatusColor(pct)} mr-3`}>{formatPercent(pct)}</span>
-                                                                    <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                                        <div className={`h-full rounded-full ${pct >= 100 ? 'bg-success-500' : pct >= 85 ? 'bg-amber-500' : 'bg-danger-500'}`} style={{ width: `${Math.min(pct, 100)}%` }}></div>
+                                                                    <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                                                        <div className={`h-full rounded-full ${pct >= 100 ? 'bg-success-500' : pct >= 71 ? 'bg-primary-500' : pct >= 31 ? 'bg-amber-500' : 'bg-danger-500'}`} style={{ width: `${Math.min(pct, 100)}%` }}></div>
                                                                     </div>
                                                                 </div>
                                                             </td>
-                                                            <td className="px-4 py-3 text-right font-mono text-slate-500 border-r border-slate-50">{formatCurrency(expected)}</td>
-                                                            <td className={`px-4 py-3 text-right font-mono font-medium border-r border-slate-50 ${shortfallVal > 0 ? 'text-danger-600' : 'text-slate-400'}`}>{shortfallVal > 0 ? formatCurrency(shortfallVal) : '-'}</td>
-                                                            <td className="px-4 py-3 text-right font-mono text-slate-500 border-r border-slate-50">{formatCurrency(row['Daily Run Rate'])}</td>
-                                                            <td className="px-4 py-3 text-right font-mono font-medium text-amber-600 border-r border-slate-50">{formatCurrency(revReq)}</td>
+                                                            <td className="px-4 py-3 text-right font-mono text-slate-600 border-r border-slate-100">{formatCurrency(row['Daily Run Rate'])}</td>
+                                                            <td className="px-4 py-3 text-right font-mono text-slate-500 border-r border-slate-100">{formatCurrency(expected)}</td>
+                                                            <td className={`px-4 py-3 text-right font-mono font-medium border-r border-slate-100 ${shortfallVal > 0 ? 'text-danger-600' : 'text-slate-400'}`}>{shortfallVal > 0 ? formatCurrency(shortfallVal) : '-'}</td>
                                                             <td className="px-4 py-3 text-center">
-                                                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border ${getStatusBadge(pct)}`}>
-                                                                    {pct >= 100 ? 'MET' : pct >= 85 ? 'AT RISK' : 'CRITICAL'}
+                                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${getStatusBadge(pct)}`}>
+                                                                    {pct >= 100 ? 'EXCELLENT' : pct >= 71 ? 'GOOD' : pct >= 31 ? 'AVERAGE' : 'CRITICAL'}
                                                                 </span>
                                                             </td>
                                                         </tr>
                                                     );
                                                 }) : (
-                                                    <tr><td colSpan="10" className="px-4 py-12 text-center text-slate-400">No data available for the selected filters.</td></tr>
+                                                    <tr><td colSpan="9" className="px-4 py-12 text-center text-slate-400">No data available for the selected filters.</td></tr>
                                                 )}
                                             </tbody>
                                         </table>
