@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Sales Dashboard</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: { 50: '#FDFBF8', 100: '#F6EFDF', 400: '#D8B88C', 500: '#C6A675', 600: '#B08F5D', 700: '#8C6F44', 900: '#523E21' },
+                        success: { 50: '#F0F4EC', 500: '#71875D', 600: '#5B6F49', 700: '#445436' },
+                        danger: { 50: '#FCF1EF', 500: '#D07567', 600: '#BA5949', 700: '#914134' },
+                        slate: { 50: '#FAF8F5', 100: '#EFECE7', 200: '#E3DCD3', 300: '#C9C0B3', 400: '#A89E90', 500: '#8A8175', 600: '#696156', 700: '#4D473E', 800: '#2E2B25', 900: '#1A1815' }
+                    },
+                    boxShadow: {
+                        'subtle': '0 1px 2px 0 rgba(26, 24, 21, 0.05)',
+                        'elevated': '0 4px 6px -1px rgba(26, 24, 21, 0.05), 0 2px 4px -1px rgba(26, 24, 21, 0.03)',
+                        'floating': '0 10px 15px -3px rgba(26, 24, 21, 0.08), 0 4px 6px -2px rgba(26, 24, 21, 0.04)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { background-color: #FAF8F5; color: #1A1815; -webkit-font-smoothing: antialiased; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #C9C0B3; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #A89E90; }
+        
+        /* Table enhancements */
+        .data-table th { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px); }
+        .data-table tr:hover td { background-color: #f8fafc; }
+        
+        .shimmer {
+            background: #f6f7f8;
+            background-image: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+            background-repeat: no-repeat;
+            background-size: 800px 100%; 
+            animation-duration: 1s;
+            animation-fill-mode: forwards; 
+            animation-iteration-count: infinite;
+            animation-name: placeholderShimmer;
+            animation-timing-function: linear;
+        }
+        @keyframes placeholderShimmer { 0% { background-position: -468px 0; } 100% { background-position: 468px 0; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+        const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val || 0);
+        const formatNumber = (val) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 1 }).format(val || 0);
+        const formatPercent = (val) => `${formatNumber(val)}%`;
+        
+        const getStatusColor = (percent) => {
+            if (percent >= 100) return 'text-success-600';
+            if (percent >= 85) return 'text-amber-600';
+            return 'text-danger-600';
+        };
+
+        const getStatusBadge = (percent) => {
+            if (percent >= 100) return 'bg-success-50 text-success-700 border-success-200';
+            if (percent >= 85) return 'bg-amber-50 text-amber-700 border-amber-200';
+            return 'bg-danger-50 text-danger-700 border-danger-200';
+        };
+
+        const parseCSV = (csvText) => {
+            const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== '');
+            if (lines.length < 2) return [];
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+            return lines.slice(1).map(line => {
+                const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+                const obj = {};
+                headers.forEach((header, i) => {
+                    let val = values[i] ? values[i].replace(/^"|"$/g, '').trim() : '';
+                    
+                    // Safely strip commas, currency symbols, and percentages so math works perfectly
+                    let numericCheck = val.replace(/[₹$,%]/g, '').trim();
+                    if (numericCheck !== '' && !isNaN(numericCheck)) {
+                        val = Number(numericCheck);
+                    }
+                    
+                    obj[header] = val;
+                });
+                return obj;
+            });
+        };
+
+        const Icon = ({ name, size = 18, className = "" }) => {
+            const iconRef = useRef(null);
+            useEffect(() => {
+                if (window.lucide && iconRef.current) {
+                    window.lucide.createIcons({ icons: { [name]: window.lucide.icons[name] }, nameAttr: 'data-lucide', attrs: { class: className, width: size, height: size } });
+                }
+            }, [name, className, size]);
+            return <i ref={iconRef} data-lucide={name} className="inline-flex"></i>;
+        };
+
+        const Card = ({ children, className = "", title, action }) => (
+            <div className={`bg-white rounded-xl border border-slate-200 shadow-subtle flex flex-col h-full ${className}`}>
+                {(title || action) && (
+                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-xl">
+                        <h3 className="text-[13px] font-semibold text-slate-700 uppercase tracking-wider">{title}</h3>
+                        {action && <div>{action}</div>}
+                    </div>
+                )}
+                <div className="flex-grow p-6">
+                    {children}
+                </div>
+            </div>
+        );
+
+        const KPICard = ({ title, value, subtext, icon, format = 'number', status = 'neutral' }) => {
+            const formattedValue = format === 'currency' ? formatCurrency(value) : format === 'percent' ? formatPercent(value) : formatNumber(value);
+            
+            const iconStyles = {
+                neutral: 'bg-slate-100 text-slate-600',
+                success: 'bg-success-50 text-success-600',
+                danger: 'bg-danger-50 text-danger-600',
+                primary: 'bg-primary-50 text-primary-600'
+            };
+
+            return (
+                <div className="bg-white rounded-xl border border-slate-200 shadow-subtle p-5 flex flex-col justify-between group hover:border-slate-300 transition-colors">
+                    <div className="flex justify-between items-start mb-3">
+                        <p className="text-[13px] font-medium text-slate-500">{title}</p>
+                        <div className={`p-2 rounded-lg ${iconStyles[status]}`}>
+                            <Icon name={icon} size={16} />
+                        </div>
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{formattedValue}</h2>
+                        {subtext && (
+                            <p className="mt-1 text-[13px] font-medium text-slate-500 flex items-center">
+                                {subtext}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const HallOfFameCard = ({ title, name, subtitle, icon, isDark = false }) => (
+            <div className={`rounded-xl border shadow-subtle p-5 flex flex-col justify-between relative overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900 group hover:border-slate-300 transition-colors'}`}>
+                <div className={`absolute -right-4 -top-4 p-4 opacity-5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <Icon name={icon} size={120} />
+                </div>
+                <div className="relative z-10">
+                    <div className={`flex items-center text-[11px] font-bold uppercase tracking-wider mb-4 ${isDark ? 'text-primary-400' : 'text-primary-600'}`}>
+                        <Icon name="Star" size={12} className="mr-1.5" /> {title}
+                    </div>
+                    <h3 className={`text-xl font-bold truncate mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>{name || 'Evaluating...'}</h3>
+                    <div className={`inline-flex items-center px-2 py-1 rounded text-[12px] font-medium ${isDark ? 'bg-white/10 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
+                        {subtitle}
+                    </div>
+                </div>
+            </div>
+        );
+
+        const ChartComponent = ({ type, data, options, height = "250px" }) => {
+            const canvasRef = useRef(null);
+            const chartInstance = useRef(null);
+
+            useEffect(() => {
+                if (canvasRef.current) {
+                    if (chartInstance.current) chartInstance.current.destroy();
+                    const ctx = canvasRef.current.getContext('2d');
+                    Chart.defaults.font.family = "'Inter', sans-serif";
+                    Chart.defaults.color = '#8A8175';
+                    chartInstance.current = new Chart(ctx, { type, data, options });
+                }
+                return () => { if (chartInstance.current) chartInstance.current.destroy(); };
+            }, [data, options, type]);
+
+            return <div style={{ height, position: 'relative', width: '100%' }}><canvas ref={canvasRef}></canvas></div>;
+        };
+
+        const App = () => {
+            const [rawData, setRawData] = useState([]);
+            const [lastSynced, setLastSynced] = useState(new Date());
+            const [isRefreshing, setIsRefreshing] = useState(false);
+            const [settingsOpen, setSettingsOpen] = useState(false);
+            
+            const [config, setConfig] = useState({
+                sourceUrl: 'https://docs.google.com/spreadsheets/d/1faXYMBSYEOlUNxmEMS6-LufCwHiOxk_sVKVvqVv3Q_o/gviz/tq?tqx=out:csv&sheet=Dashboard',
+                autoRefresh: true
+            });
+
+            const [filters, setFilters] = useState({ month: 'All', manager: 'All', search: '' });
+
+            const fetchData = useCallback(async (isManual = false) => {
+                if (isManual) setIsRefreshing(true);
+                try {
+                    if (config.sourceUrl) {
+                        const response = await fetch(config.sourceUrl);
+                        const csvText = await response.text();
+                        const parsed = parseCSV(csvText);
+                        if (parsed.length > 0) setRawData(parsed);
+                    }
+                    setLastSynced(new Date());
+                } catch (error) {
+                    console.error("Data Fetch Error", error);
+                } finally {
+                    if (isManual) setTimeout(() => setIsRefreshing(false), 500); 
+                }
+            }, [config.sourceUrl]);
+
+            useEffect(() => {
+                fetchData(true);
+                let interval;
+                if (config.autoRefresh) interval = setInterval(() => fetchData(), 1000); 
+                return () => clearInterval(interval);
+            }, [config.autoRefresh, config.sourceUrl, fetchData]);
+
+            const availableMonths = useMemo(() => {
+                const months = [...new Set(rawData.map(d => d.Month).filter(Boolean))].sort();
+                return months.length ? months : ['All'];
+            }, [rawData]);
+
+            const availableManagers = useMemo(() => [...new Set(rawData.map(d => d['Manager Name']).filter(Boolean))].sort(), [rawData]);
+
+            const filteredData = useMemo(() => {
+                return rawData.filter(row => {
+                    const matchMonth = filters.month === 'All' || row.Month === filters.month;
+                    const matchManager = filters.manager === 'All' || row['Manager Name'] === filters.manager;
+                    const matchSearch = row['Employee Name']?.toLowerCase().includes(filters.search.toLowerCase()) || false;
+                    return matchMonth && matchManager && matchSearch;
+                });
+            }, [rawData, filters]);
+
+            const kpis = useMemo(() => {
+                if (!filteredData.length) return null;
+
+                const totals = filteredData.reduce((acc, row) => {
+                    acc.target += row.Target || 0;
+                    acc.achieved += row['Sales Achieved'] || 0;
+                    return acc;
+                }, { target: 0, achieved: 0 });
+
+                const achievementPercent = totals.target > 0 ? (totals.achieved / totals.target) * 100 : 0;
+                const shortfall = Math.max(0, totals.target - totals.achieved);
+                const shortfallPercent = totals.target > 0 ? (shortfall / totals.target) * 100 : 0;
+
+                let topBDE = null; let topBDEPct = -1;
+                let topMgr = null; let topMgrPct = -1;
+                const managerMap = {};
+
+                filteredData.forEach(row => {
+                    // Employee logic
+                    const empPct = row.Target > 0 ? (row['Sales Achieved'] / row.Target) * 100 : 0;
+                    if (empPct > topBDEPct && row.Target > 0) {
+                        topBDEPct = empPct;
+                        topBDE = { name: row['Employee Name'], pct: empPct, achieved: row['Sales Achieved'] };
+                    }
+                    
+                    // Manager aggregation logic
+                    const mgr = row['Manager Name'];
+                    if (mgr) {
+                        if (!managerMap[mgr]) managerMap[mgr] = { achieved: 0, target: 0 };
+                        managerMap[mgr].achieved += row['Sales Achieved'] || 0;
+                        managerMap[mgr].target += row.Target || 0;
+                    }
+                });
+                
+                Object.keys(managerMap).forEach(mgr => {
+                    const pct = managerMap[mgr].target > 0 ? (managerMap[mgr].achieved / managerMap[mgr].target) * 100 : 0;
+                    if (pct > topMgrPct && managerMap[mgr].target > 0) {
+                        topMgrPct = pct;
+                        topMgr = { name: mgr, pct, achieved: managerMap[mgr].achieved };
+                    }
+                });
+
+                return { totalTarget: totals.target, totalAchieved: totals.achieved, achievementPercent, shortfall, shortfallPercent, topBDE, topManager: topMgr };
+            }, [filteredData]);
+
+            const managerStats = useMemo(() => {
+                const map = {};
+                filteredData.forEach(row => {
+                    const mgr = row['Manager Name'];
+                    if (!mgr) return;
+                    if (!map[mgr]) map[mgr] = { name: mgr, target: 0, achieved: 0, teamSize: 0 };
+                    map[mgr].target += row.Target || 0;
+                    map[mgr].achieved += row['Sales Achieved'] || 0;
+                    map[mgr].teamSize += 1;
+                });
+                return Object.values(map).map(m => ({ ...m, percent: m.target > 0 ? (m.achieved / m.target) * 100 : 0 })).sort((a, b) => b.percent - a.percent); 
+            }, [filteredData]);
+
+            const handleExport = () => {
+                if (!filteredData.length) return;
+                const headers = Object.keys(filteredData[0]);
+                const csvRows = [headers.join(','), ...filteredData.map(row => headers.map(h => `"${row[h]}"`).join(','))];
+                const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = `Team_Sales_Export.csv`; a.click();
+            };
+
+            if (!kpis && rawData.length === 0) return (
+                <div className="flex flex-col h-screen items-center justify-center bg-slate-50">
+                    <div className="shimmer h-2 w-48 rounded mb-4"></div>
+                    <p className="text-[13px] text-slate-500 font-medium">Connecting to Data Warehouse...</p>
+                </div>
+            );
+
+            // Chart Configs
+            const managerChartData = {
+                labels: managerStats.map(m => m.name.split(' ')[0]),
+                datasets: [
+                    { label: 'Achieved (₹)', data: managerStats.map(m => m.achieved), backgroundColor: '#C6A675', borderRadius: 4, barPercentage: 0.5 },
+                    { label: 'Target (₹)', data: managerStats.map(m => m.target), backgroundColor: '#E3DCD3', borderRadius: 4, barPercentage: 0.5 }
+                ]
+            };
+
+            const targetVsActualData = {
+                labels: ['Achieved', 'Shortfall'],
+                datasets: [{
+                    data: kpis ? [kpis.totalAchieved, Math.max(0, kpis.totalTarget - kpis.totalAchieved)] : [0, 1],
+                    backgroundColor: ['#71875D', '#E3DCD3'],
+                    borderWidth: 0, cutout: '80%'
+                }]
+            };
+
+            return (
+                <div className="min-h-screen pb-12">
+                    {/* Top Header Row - Crisp & Clean */}
+                    <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+                        <div className="px-6 h-16 flex justify-between items-center max-w-[1600px] mx-auto">
+                            <div className="flex items-center space-x-3">
+                                <div>
+                                    <h1 className="text-[16px] font-bold text-slate-900 tracking-tight leading-tight">Team Sales Dashboard</h1>
+                                </div>
+                            </div>
+                            <div className="flex items-center space-x-4">
+                                <div className="flex items-center text-[12px] font-medium text-slate-500 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-success-500 mr-2 animate-pulse"></div>
+                                    Sync: {lastSynced.toLocaleTimeString()}
+                                </div>
+                                <button onClick={() => fetchData(true)} disabled={isRefreshing} className="text-slate-500 hover:text-slate-900 transition-colors p-2">
+                                    <Icon name="RefreshCw" size={16} className={isRefreshing ? 'animate-spin text-primary-600' : ''} />
+                                </button>
+                                <button onClick={() => setSettingsOpen(true)} className="text-slate-500 hover:text-slate-900 transition-colors p-2"><Icon name="Settings" size={16} /></button>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Secondary Toolbar - Filters */}
+                    <div className="bg-slate-50 border-b border-slate-200 shadow-sm mb-8">
+                        <div className="px-6 py-3 max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-4">
+                            <div className="flex items-center space-x-6 text-[13px]">
+                                <div className="flex items-center">
+                                    <span className="font-semibold text-slate-600 mr-3"><Icon name="Calendar" size={14} className="mr-1 inline text-slate-400"/> Period:</span>
+                                    <div className="flex bg-white rounded shadow-sm border border-slate-200 overflow-hidden">
+                                        {['All', ...availableMonths.filter(m => m !== 'All')].map(m => (
+                                            <button key={m} onClick={() => setFilters({...filters, month: m})} className={`px-3 py-1 border-r border-slate-100 last:border-0 transition-colors ${filters.month === m ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
+                                                {m}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="h-4 w-px bg-slate-300"></div>
+                                <div className="flex items-center">
+                                    <span className="font-semibold text-slate-600 mr-3"><Icon name="Users" size={14} className="mr-1 inline text-slate-400"/> Manager View:</span>
+                                    <select className="bg-white border border-slate-200 rounded py-1 px-2 text-slate-700 outline-none focus:border-primary-500 shadow-sm cursor-pointer" value={filters.manager} onChange={(e) => setFilters({...filters, manager: e.target.value})}>
+                                        <option value="All">All Organization</option>
+                                        {availableManagers.map(m => <option key={m} value={m}>{m}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Main Content Dashboard */}
+                    <div className="max-w-[1600px] mx-auto px-6 space-y-6">
+                        {kpis && (
+                            <>
+                                {/* ROW 1: KPIs & Hall of Fame */}
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                    {/* Primary Financials */}
+                                    <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                        <KPICard title="Total Team Target" value={kpis.totalTarget} format="currency" icon="Target" status="primary" />
+                                        <KPICard title="Total Revenue Achieved" value={kpis.totalAchieved} format="currency" icon="CheckCircle2" status="success" subtext={`Achievement Rate: ${formatPercent(kpis.achievementPercent)}`} />
+                                        <KPICard title="Total Revenue Shortfall" value={kpis.shortfall} format="currency" icon="AlertTriangle" status={kpis.shortfall > 0 ? "danger" : "neutral"} subtext={`Shortfall Gap: ${formatPercent(kpis.shortfallPercent)}`} />
+                                    </div>
+                                    
+                                    {/* Hall of Fame */}
+                                    <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                        <HallOfFameCard isDark={true} title="Top Manager" name={kpis.topManager?.name} subtitle={`Achieved: ${formatPercent(kpis.topManager?.pct)}`} icon="Award" />
+                                        <HallOfFameCard isDark={false} title="Top BDE Performer" name={kpis.topBDE?.name} subtitle={`Achieved: ${formatPercent(kpis.topBDE?.pct)}`} icon="TrendingUp" />
+                                    </div>
+                                </div>
+
+                                {/* ROW 2: Analytical Charts */}
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <Card title="Target vs Actual Realization">
+                                        <div className="relative h-[220px] flex items-center justify-center mt-2">
+                                            <ChartComponent type="doughnut" data={targetVsActualData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => formatCurrency(ctx.raw) } } }, animation: { animateScale: false } }} height="100%" />
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                                <span className="text-3xl font-bold text-slate-900">{formatPercent(kpis.achievementPercent)}</span>
+                                                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mt-1">Realized</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-center space-x-6 mt-4 text-[12px] font-medium text-slate-600 border-t border-slate-100 pt-4">
+                                            <div className="flex items-center"><span className="w-3 h-3 rounded-full bg-success-500 mr-2"></span>Achieved</div>
+                                            <div className="flex items-center"><span className="w-3 h-3 rounded-full bg-slate-200 mr-2"></span>Shortfall</div>
+                                        </div>
+                                    </Card>
+
+                                    <Card title="Manager Performance Comparison" className="lg:col-span-2">
+                                        <ChartComponent type="bar" data={managerChartData} options={{
+                                            responsive: true, maintainAspectRatio: false,
+                                            plugins: { legend: { position: 'top', align: 'end', labels: { boxWidth: 12, font: {size: 11} } } },
+                                            scales: {
+                                                y: { beginAtZero: true, grid: { color: '#f1f5f9' }, border: { dash: [4, 4] }, ticks: { font: {size: 11}, callback: v => '₹' + (v/100000).toFixed(1) + 'L' } },
+                                                x: { grid: { display: false }, ticks: { font: {size: 11} } }
+                                            }
+                                        }} height="260px" />
+                                    </Card>
+                                </div>
+
+                                {}
+                                <Card title="BDE Execution Data Grid" action={
+                                    <div className="flex items-center space-x-3">
+                                        <div className="relative">
+                                            <Icon name="Search" size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                                            <input type="text" placeholder="Search BDE..." className="pl-8 pr-3 py-1.5 border border-slate-200 rounded bg-slate-50 text-[13px] focus:outline-none focus:ring-1 ring-primary-500 focus:bg-white w-60 transition-colors" value={filters.search} onChange={(e) => setFilters({...filters, search: e.target.value})} />
+                                        </div>
+                                        <button onClick={handleExport} className="flex items-center px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded text-[13px] font-medium transition-colors">
+                                            <Icon name="Download" size={14} className="mr-1.5" /> Export
+                                        </button>
+                                    </div>
+                                }>
+                                    <div className="overflow-x-auto custom-scrollbar border border-slate-200 rounded-lg">
+                                        <table className="w-full text-left border-collapse data-table whitespace-nowrap">
+                                            <thead className="bg-slate-50 text-[11px] text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                                                <tr>
+                                                    <th className="px-4 py-3 border-r border-slate-100">BDE Name</th>
+                                                    <th className="px-4 py-3 border-r border-slate-100">Manager</th>
+                                                    <th className="px-4 py-3 border-r border-slate-100 text-right">Target</th>
+                                                    <th className="px-4 py-3 border-r border-slate-100 text-right">Achieved</th>
+                                                    <th className="px-4 py-3 border-r border-slate-100 text-center">Achievement %</th>
+                                                    <th className="px-4 py-3 border-r border-slate-100 text-right">Expected Sales</th>
+                                                    <th className="px-4 py-3 border-r border-slate-100 text-right">Shortfall</th>
+                                                    <th className="px-4 py-3 border-r border-slate-100 text-right">Current RR</th>
+                                                    <th className="px-4 py-3 border-r border-slate-100 text-right">Required RR</th>
+                                                    <th className="px-4 py-3 text-center">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 text-[13px] text-slate-700">
+                                                {filteredData.length > 0 ? filteredData.map((row, idx) => {
+                                                    const target = Number(row.Target) || 0;
+                                                    const achieved = Number(row['Sales Achieved']) || 0;
+                                                    
+                                                    // Auto-Calculate Achievement % (Fallback if sheet data is weird)
+                                                    const pct = target > 0 ? (achieved / target) * 100 : 0;
+                                                    
+                                                    // Auto-Calculate Shortfall automatically (ignores sheet column entirely)
+                                                    const shortfallVal = Math.max(0, target - achieved);
+
+                                                    // Fetch the extra metrics from your specific columns
+                                                    const expected = Number(row['Expected Sales']) || 0;
+                                                    const revReq = Number(row['Revenue Required']) || 0;
+
+                                                    return (
+                                                        <tr key={idx} className="transition-colors group">
+                                                            <td className="px-4 py-3 font-medium text-slate-900 border-r border-slate-50">{row['Employee Name'] || '-'}</td>
+                                                            <td className="px-4 py-3 text-slate-500 border-r border-slate-50">{row['Manager Name'] || '-'}</td>
+                                                            <td className="px-4 py-3 text-right font-mono text-slate-500 border-r border-slate-50">{formatCurrency(target)}</td>
+                                                            <td className="px-4 py-3 text-right font-mono font-semibold text-slate-900 border-r border-slate-50">{formatCurrency(achieved)}</td>
+                                                            <td className="px-4 py-3 border-r border-slate-50">
+                                                                <div className="flex items-center justify-end">
+                                                                    <span className={`font-mono font-semibold ${getStatusColor(pct)} mr-3`}>{formatPercent(pct)}</span>
+                                                                    <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                                        <div className={`h-full rounded-full ${pct >= 100 ? 'bg-success-500' : pct >= 85 ? 'bg-amber-500' : 'bg-danger-500'}`} style={{ width: `${Math.min(pct, 100)}%` }}></div>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-right font-mono text-slate-500 border-r border-slate-50">{formatCurrency(expected)}</td>
+                                                            <td className={`px-4 py-3 text-right font-mono font-medium border-r border-slate-50 ${shortfallVal > 0 ? 'text-danger-600' : 'text-slate-400'}`}>{shortfallVal > 0 ? formatCurrency(shortfallVal) : '-'}</td>
+                                                            <td className="px-4 py-3 text-right font-mono text-slate-500 border-r border-slate-50">{formatCurrency(row['Daily Run Rate'])}</td>
+                                                            <td className="px-4 py-3 text-right font-mono font-medium text-amber-600 border-r border-slate-50">{formatCurrency(revReq)}</td>
+                                                            <td className="px-4 py-3 text-center">
+                                                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border ${getStatusBadge(pct)}`}>
+                                                                    {pct >= 100 ? 'MET' : pct >= 85 ? 'AT RISK' : 'CRITICAL'}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                }) : (
+                                                    <tr><td colSpan="10" className="px-4 py-12 text-center text-slate-400">No data available for the selected filters.</td></tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </Card>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Settings Modal */}
+                    {settingsOpen && (
+                        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-xl shadow-floating w-full max-w-lg border border-slate-200">
+                                <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                                    <h3 className="font-bold text-slate-800 text-[15px]">Connection Settings</h3>
+                                    <button onClick={() => setSettingsOpen(false)} className="text-slate-400 hover:text-slate-600"><Icon name="X" size={18}/></button>
+                                </div>
+                                <div className="p-6">
+                                    <label className="block text-[13px] font-semibold text-slate-700 mb-2">Google Sheets CSV URL</label>
+                                    <input type="text" className="w-full border border-slate-300 rounded text-[13px] px-3 py-2 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none font-mono" value={config.sourceUrl} onChange={(e) => setConfig({...config, sourceUrl: e.target.value})} />
+                                    <p className="mt-2 text-[12px] text-slate-500">Currently mapped to your <strong>Dashboard</strong> sheet.</p>
+                                </div>
+                                <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-3 rounded-b-xl">
+                                    <button onClick={() => setSettingsOpen(false)} className="px-4 py-1.5 text-[13px] font-semibold text-slate-600 hover:text-slate-800 border border-slate-200 rounded bg-white">Cancel</button>
+                                    <button onClick={() => { setSettingsOpen(false); fetchData(true); }} className="px-4 py-1.5 bg-primary-600 text-white rounded text-[13px] font-semibold hover:bg-primary-700 shadow-sm transition-colors">Apply Config</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
