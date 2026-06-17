@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Sales Dashboard</title>
+    <title>Sales Dashboard</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -377,6 +377,51 @@
                 interaction: { mode: 'index', intersect: false }
             }), []);
 
+            /* NEW INFOGRAPHIC DATA MEMOS */
+            const teamHealth = useMemo(() => {
+                if (!filteredData.length) return null;
+                let met = 0, good = 0, avg = 0, risk = 0;
+                filteredData.forEach(row => {
+                    const target = Number(row.Target) || 0;
+                    const achieved = Number(row['Sales Achieved']) || 0;
+                    const pct = target > 0 ? (achieved / target) * 100 : 0;
+                    if (pct >= 100) met++;
+                    else if (pct >= 71) good++;
+                    else if (pct >= 31) avg++;
+                    else risk++;
+                });
+                return {
+                    counts: { met, good, avg, risk },
+                    total: filteredData.length,
+                    chartData: {
+                        labels: ['Target Met', 'Good', 'Average', 'At Risk'],
+                        datasets: [{
+                            data: [met, good, avg, risk],
+                            backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
+                            borderWidth: 0, hoverOffset: 4, cutout: '82%', borderRadius: 10
+                        }]
+                    }
+                };
+            }, [filteredData]);
+
+            const topPerformers = useMemo(() => {
+                if (!filteredData.length) return [];
+                return [...filteredData]
+                    .map(d => ({ name: d['Employee Name'], revenue: Number(d['Sales Achieved']) || 0, target: Number(d.Target) || 0 }))
+                    .sort((a, b) => b.revenue - a.revenue)
+                    .slice(0, 5);
+            }, [filteredData]);
+
+            const maxTopPerformerRevenue = useMemo(() => {
+                return topPerformers.length ? Math.max(...topPerformers.map(p => p.revenue)) : 1;
+            }, [topPerformers]);
+
+            const teamHealthOptions = useMemo(() => ({
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0f172a', padding: 12, cornerRadius: 8, bodyFont: {family: 'Inter'} } },
+                animation: { animateScale: true, animateRotate: true }
+            }), []);
+
             if (!kpis) return (
                 <div className="flex h-screen items-center justify-center bg-slate-50 flex-col">
                     <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mb-4"></div>
@@ -391,12 +436,16 @@
                     <div className="pt-6 px-6 max-w-[1600px] mx-auto z-50 relative animate-slide-up">
                         <div className="bg-white/80 backdrop-blur-2xl border border-white/60 shadow-glass rounded-2xl px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
                             
-                            <div className="flex items-center space-x-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-indigo-800 rounded-xl flex items-center justify-center shadow-glow-primary">
-                                    <Icon name="Activity" size={20} className="text-white" />
+                            <div className="flex items-center space-x-4">
+                                {/* Text-based Logo for OnePaper */}
+                                <div className="flex items-center justify-center px-3 py-1.5 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-md border border-slate-700/50 hover:scale-105 transition-transform duration-300">
+                                    <span className="text-xl font-black font-display tracking-tighter text-white">
+                                        One<span className="text-primary-400">Paper</span>
+                                    </span>
                                 </div>
+                                <div className="hidden sm:block h-8 w-px bg-slate-200"></div>
                                 <div>
-                                    <h1 className="text-xl font-extrabold font-display tracking-tight text-slate-900">🏆 Team Sales Dashboard</h1>
+                                    <h1 className="text-xl font-extrabold font-display tracking-tight text-slate-900">Sales Dashboard</h1>
                                     <div className="flex items-center space-x-2 mt-0.5">
                                         <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-glow-emerald"></div>
                                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Live Feed Active</span>
@@ -465,6 +514,49 @@
                                 }>
                                 <div className="mt-4">
                                     <ChartComponent type="bar" data={managerChartData} options={barOptions} height="280px" />
+                                </div>
+                            </Card>
+                        </div>
+
+                        {/* ROW 2.5: NEW INFOGRAPHICS */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-slide-up" style={{ animationDelay: '250ms' }}>
+                            {/* Team Health Doughnut */}
+                            <Card title="Team Health Distribution" className="lg:col-span-1" bodyClass="p-6 pt-2">
+                                <div className="relative h-[200px] flex items-center justify-center group mt-2">
+                                    {teamHealth && <ChartComponent type="doughnut" data={teamHealth.chartData} options={teamHealthOptions} height="100%" />}
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transform transition-transform duration-500 group-hover:scale-110">
+                                        <span className="text-3xl font-black font-display tracking-tight text-slate-800">{teamHealth?.total || 0}</span>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total BDEs</span>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-y-3 gap-x-4 mt-6 pt-5 border-t border-slate-100/60">
+                                    <div className="flex items-center"><div className="w-2 h-2 rounded-full bg-emerald-500 mr-2.5 shadow-glow-emerald"></div><span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex-1">Target Met</span><span className="text-[12px] font-black text-slate-800">{teamHealth?.counts.met || 0}</span></div>
+                                    <div className="flex items-center"><div className="w-2 h-2 rounded-full bg-primary-500 mr-2.5 shadow-glow-primary"></div><span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex-1">Good</span><span className="text-[12px] font-black text-slate-800">{teamHealth?.counts.good || 0}</span></div>
+                                    <div className="flex items-center"><div className="w-2 h-2 rounded-full bg-amber-500 mr-2.5"></div><span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex-1">Average</span><span className="text-[12px] font-black text-slate-800">{teamHealth?.counts.avg || 0}</span></div>
+                                    <div className="flex items-center"><div className="w-2 h-2 rounded-full bg-red-500 mr-2.5"></div><span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex-1">At Risk</span><span className="text-[12px] font-black text-slate-800">{teamHealth?.counts.risk || 0}</span></div>
+                                </div>
+                            </Card>
+
+                            {/* Top 5 Leaderboard */}
+                            <Card title="Top Revenue Drivers" className="lg:col-span-2" bodyClass="p-6 pt-2">
+                                <div className="flex flex-col justify-center h-full space-y-6 mt-1">
+                                    {topPerformers.map((emp, i) => (
+                                        <div key={i} className="relative group">
+                                            <div className="flex justify-between items-end mb-2">
+                                                <div className="flex items-center">
+                                                    <span className="text-[12px] font-black text-slate-300 w-5 mr-1 group-hover:text-primary-400 transition-colors">{i+1}.</span>
+                                                    <span className="text-[13px] font-bold text-slate-800 font-display">{emp.name}</span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-[13px] font-black text-slate-800 tabular-nums">{formatCurrency(emp.revenue)}</span>
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-2 hidden sm:inline-block">/ {formatCurrency(emp.target)}</span>
+                                                </div>
+                                            </div>
+                                            <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                                                <div className="h-full bg-gradient-to-r from-primary-600 to-primary-400 rounded-full group-hover:from-emerald-500 group-hover:to-emerald-400 transition-colors duration-500" style={{ width: `${(emp.revenue / maxTopPerformerRevenue) * 100}%` }}></div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </Card>
                         </div>
@@ -543,10 +635,12 @@
                                                     
                                                     {/* Clean ghost-style badges */}
                                                     <td className="px-6 py-4 text-center">
-                                                        {isTopAchiever ? (
-                                                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-200/60 shadow-sm"><Icon name="TrendingUp" size={12} className="mr-1.5"/> Target Met</span>
-                                                        ) : isOnTrack ? (
-                                                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-primary-50 text-primary-600 border border-primary-200/60 shadow-sm"><Icon name="TrendingUp" size={12} className="mr-1.5"/> On Track</span>
+                                                        {pct >= 100 ? (
+                                                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-200/60 shadow-sm"><Icon name="Award" size={12} className="mr-1.5"/> Target Met</span>
+                                                        ) : pct >= 71 ? (
+                                                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-primary-50 text-primary-600 border border-primary-200/60 shadow-sm"><Icon name="TrendingUp" size={12} className="mr-1.5"/> Good</span>
+                                                        ) : pct >= 31 ? (
+                                                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-200/60 shadow-sm"><Icon name="Minus" size={12} className="mr-1.5"/> Average</span>
                                                         ) : (
                                                             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-red-50 text-red-600 border border-red-200/60 shadow-sm"><Icon name="TrendingDown" size={12} className="mr-1.5"/> At Risk</span>
                                                         )}
