@@ -743,7 +743,28 @@
                                                     <tr key={idx} className="table-row-hover bg-white">
                                                         <td className="px-6 py-4">
                                                             <div className="flex items-center font-bold text-slate-900 font-display">
-                                                                {isTopAchiever && <Icon name="Award" size={14} className="text-emerald-500 mr-2" />}
+                                                                <div className="relative mr-3 flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                                                    {isTopAchiever ? (
+                                                                        <img 
+                                                                            src={getProfilePic(row['Employee Name'], row)} 
+                                                                            alt={row['Employee Name']}
+                                                                            className="w-9 h-9 rounded-full object-cover border-2 border-emerald-500 shadow-glow-emerald"
+                                                                            onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(row['Employee Name'] || 'A')}&background=10b981&color=fff&bold=true`; }}
+                                                                        />
+                                                                    ) : (
+                                                                        <img 
+                                                                            src={getProfilePic(row['Employee Name'], row)} 
+                                                                            alt={row['Employee Name']}
+                                                                            className="w-8 h-8 rounded-full object-cover border border-slate-200 opacity-70"
+                                                                            onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(row['Employee Name'] || 'A')}&background=e2e8f0&color=475569&bold=true`; }}
+                                                                        />
+                                                                    )}
+                                                                    {isTopAchiever && (
+                                                                        <div className="absolute -top-1.5 -right-1.5 bg-white rounded-full p-[2px] shadow-md z-10">
+                                                                            <Icon name="Award" size={12} className="text-emerald-500" />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                                 {row['Employee Name'] || '-'}
                                                             </div>
                                                         </td>
