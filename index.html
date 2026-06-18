@@ -552,9 +552,9 @@
                     return topPerformers.length ? Math.max(...topPerformers.map(p => p.revenue)) : 1;
                 }, [topPerformers]);
 
-                const achievers100 = useMemo(() => {
+                const achieverTiers = useMemo(() => {
                     if (!filteredData.length) return [];
-                    return [...filteredData]
+                    const achievers = [...filteredData]
                         .map(d => ({ 
                             name: d['Employee Name'], 
                             revenue: Number(d['Sales Achieved']) || 0, 
@@ -564,6 +564,52 @@
                         }))
                         .filter(d => d.pct >= 100)
                         .sort((a, b) => b.pct - a.pct);
+
+                    const getTierConfig = (type) => {
+                        if (type === 'legends') return {
+                            bgGlow1: 'bg-amber-500', bgGlow2: 'bg-orange-500',
+                            iconBox: 'from-amber-500/20 to-orange-500/20 border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.3)]',
+                            iconText: 'text-amber-400', pulse: 'bg-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.8)]',
+                            subtitle: 'text-orange-400', cardGlow: 'from-amber-500 to-orange-500',
+                            borderSpin: 'border-amber-500/40', avatarFallback: 'f59e0b',
+                            badgeBg: 'bg-amber-500/10 border-amber-500/20', badgeText: 'text-amber-400',
+                            textMain: 'text-amber-400', textSec: 'text-orange-400',
+                            barBase: 'bg-amber-500', barOver: 'bg-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.8)]'
+                        };
+                        if (type === 'masters') return {
+                            bgGlow1: 'bg-purple-500', bgGlow2: 'bg-fuchsia-500',
+                            iconBox: 'from-purple-500/20 to-fuchsia-500/20 border-purple-500/30 shadow-[0_0_30px_rgba(168,85,247,0.3)]',
+                            iconText: 'text-purple-400', pulse: 'bg-fuchsia-400 shadow-[0_0_10px_rgba(217,70,239,0.8)]',
+                            subtitle: 'text-fuchsia-400', cardGlow: 'from-purple-500 to-fuchsia-500',
+                            borderSpin: 'border-purple-500/40', avatarFallback: 'a855f7',
+                            badgeBg: 'bg-purple-500/10 border-purple-500/20', badgeText: 'text-purple-400',
+                            textMain: 'text-purple-400', textSec: 'text-fuchsia-400',
+                            barBase: 'bg-purple-500', barOver: 'bg-fuchsia-400 shadow-[0_0_10px_rgba(217,70,239,0.8)]'
+                        };
+                        return { // elites default
+                            bgGlow1: 'bg-emerald-500', bgGlow2: 'bg-cyan-500',
+                            iconBox: 'from-emerald-500/20 to-cyan-500/20 border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.3)]',
+                            iconText: 'text-emerald-400', pulse: 'bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]',
+                            subtitle: 'text-cyan-400', cardGlow: 'from-emerald-500 to-cyan-500',
+                            borderSpin: 'border-emerald-500/40', avatarFallback: '10b981',
+                            badgeBg: 'bg-emerald-500/10 border-emerald-500/20', badgeText: 'text-emerald-400',
+                            textMain: 'text-emerald-400', textSec: 'text-cyan-400',
+                            barBase: 'bg-emerald-500', barOver: 'bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]'
+                        };
+                    };
+
+                    const tiers = [];
+                    
+                    const legends = achievers.filter(a => a.pct >= 201);
+                    if (legends.length > 0) tiers.push({ id: 'legends', title: 'Exceptional Performance', subtitle: `${legends.length} Associates Achieved 201%+`, icon: 'Crown', tierName: 'Exceptional', config: getTierConfig('legends'), members: legends });
+
+                    const masters = achievers.filter(a => a.pct >= 150 && a.pct < 201);
+                    if (masters.length > 0) tiers.push({ id: 'masters', title: 'Outstanding Performance', subtitle: `${masters.length} Associates Achieved 150%+`, icon: 'Zap', tierName: 'Outstanding', config: getTierConfig('masters'), members: masters });
+
+                    const elites = achievers.filter(a => a.pct >= 100 && a.pct < 150);
+                    if (elites.length > 0) tiers.push({ id: 'elites', title: 'Elite Performance', subtitle: `${elites.length} Associates Achieved 100%+`, icon: 'Target', tierName: 'Elite', config: getTierConfig('elites'), members: elites });
+
+                    return tiers;
                 }, [filteredData]);
 
                 const teamMVPs = useMemo(() => {
@@ -786,7 +832,11 @@
                                         </div>
                                         <h3 className="text-xl font-extrabold font-display text-slate-800 tracking-tight">Team MVPs Spotlight</h3>
                                     </div>
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    <div className={`grid gap-6 ${
+                                        teamMVPs.length === 1 ? 'grid-cols-1 max-w-3xl mx-auto' : 
+                                        teamMVPs.length === 2 ? 'grid-cols-1 lg:grid-cols-2' : 
+                                        'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'
+                                    }`}>
                                         {teamMVPs.map((mvp, idx) => {
                                             const overachieved = Math.max(0, mvp.revenue - mvp.target);
                                             const firstName = mvp.manager.split(' ')[0];
@@ -858,102 +908,147 @@
                                 </div>
                             )}
 
-                            {/* ROW 2.75: THE 100% CLUB (NEW INFOGRAPHIC) */}
-                            {achievers100.length > 0 && (
-                                <div className="animate-slide-up" style={{ animationDelay: '275ms' }}>
-                                    <div className="bg-[#0b1121] rounded-3xl border border-slate-800 shadow-float p-7 relative overflow-hidden">
-                                        {/* Architectural Infographic Background Decor */}
-                                        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500 opacity-10 rounded-full blur-[100px] pointer-events-none"></div>
-                                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500 opacity-10 rounded-full blur-[80px] pointer-events-none"></div>
-                                        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
-                                        
-                                        <div className="flex flex-wrap gap-4 items-center justify-between mb-8 relative z-10">
-                                            <div className="flex items-center space-x-5">
-                                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 backdrop-blur-md flex items-center justify-center border border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.3)] group-hover:scale-110 transition-transform">
-                                                    <Icon name="Target" size={28} className="text-emerald-400 drop-shadow-md" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-2xl font-black font-display text-white tracking-tight">The 100% Achievers Club</h3>
-                                                    <div className="flex items-center mt-1.5">
-                                                        <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse mr-2 shadow-[0_0_10px_rgba(34,211,238,0.8)]"></div>
-                                                        <p className="text-[12px] font-bold text-cyan-400 uppercase tracking-widest">{achievers100.length} Elite Performers Target Destroyed</p>
+                            {}
+                            {/* ROW 2.75: THE HIGH ACHIEVER TIERS (NEW INFOGRAPHIC) */}
+                            {achieverTiers.length > 0 && (
+                                <div className="flex flex-col space-y-8 animate-slide-up mt-8" style={{ animationDelay: '275ms' }}>
+                                    {achieverTiers.map((tier, tierIdx) => (
+                                        <div key={tier.id} className="bg-[#0b1121] rounded-3xl border border-slate-800 shadow-float p-7 relative overflow-hidden">
+                                            {/* Architectural Infographic Background Decor */}
+                                            <div className={`absolute top-0 right-0 w-96 h-96 opacity-10 rounded-full blur-[100px] pointer-events-none ${tier.config.bgGlow1}`}></div>
+                                            <div className={`absolute bottom-0 left-0 w-64 h-64 opacity-10 rounded-full blur-[80px] pointer-events-none ${tier.config.bgGlow2}`}></div>
+                                            <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+                                            
+                                            <div className="flex flex-wrap gap-4 items-center justify-between mb-8 relative z-10">
+                                                <div className="flex items-center space-x-5">
+                                                    <div className={`w-14 h-14 rounded-2xl backdrop-blur-md flex items-center justify-center border group-hover:scale-110 transition-transform ${tier.config.iconBox}`}>
+                                                        <Icon name={tier.icon} size={28} className={`${tier.config.iconText} drop-shadow-md`} />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-2xl font-black font-display text-white tracking-tight">{tier.title}</h3>
+                                                        <div className="flex items-center mt-1.5">
+                                                            <div className={`w-2 h-2 rounded-full animate-pulse mr-2 ${tier.config.pulse}`}></div>
+                                                            <p className={`text-[12px] font-bold uppercase tracking-widest ${tier.config.subtitle}`}>{tier.subtitle}</p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {/* Scrollable VIP Cards - Redesigned for Infographic Look */}
-                                        <div className="flex overflow-x-auto gap-6 pb-4 pt-2 px-2 relative z-10" style={{ scrollbarWidth: 'thin', scrollbarColor: '#10b981 transparent' }}>
-                                            {achievers100.map((emp, i) => {
-                                                const overachieved = Math.max(0, emp.revenue - emp.target);
-                                                return (
-                                                <div key={i} className="flex-shrink-0 relative group min-w-[340px]">
-                                                    {/* Glow Behind Card */}
-                                                    <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-60 transition duration-500"></div>
-                                                    
-                                                    {/* Card Body */}
-                                                    <div className="relative h-full bg-slate-900 border border-slate-700/60 rounded-2xl p-6 hover:bg-slate-800/90 transition-colors">
+                                            {/* Scrollable VIP Cards */}
+                                            <div className="flex overflow-x-auto gap-6 pb-4 pt-2 px-2 relative z-10" style={{ scrollbarWidth: 'thin', scrollbarColor: `${tier.id === 'elites' ? '#10b981' : tier.id === 'masters' ? '#a855f7' : '#f59e0b'} transparent` }}>
+                                                {tier.members.map((emp, i) => {
+                                                    const overachieved = Math.max(0, emp.revenue - emp.target);
+                                                    const maxVal = Math.max(emp.target, emp.revenue) || 1;
+                                                    const targetBarPct = (emp.target / maxVal) * 100;
+
+                                                    return (
+                                                    <div key={i} className="flex-shrink-0 relative group w-[340px]">
+                                                        {/* Glow Behind Card */}
+                                                        <div className={`absolute -inset-0.5 bg-gradient-to-r ${tier.config.cardGlow} rounded-2xl blur opacity-20 group-hover:opacity-60 transition duration-500`}></div>
                                                         
-                                                        <div className="flex items-start justify-between mb-5">
-                                                            <div className="flex items-center space-x-4">
-                                                                <div className="relative">
-                                                                    {/* Rotating Radar Border */}
-                                                                    <div className="absolute -inset-2 border-2 border-dashed border-emerald-500/40 rounded-full animate-[spin_8s_linear_infinite]"></div>
-                                                                    <img 
-                                                                        src={emp.photo} 
-                                                                        alt={emp.name} 
-                                                                        className="relative w-14 h-14 rounded-full object-cover border-2 border-slate-900 z-10" 
-                                                                        onError={(e) => { 
-                                                                            e.target.onerror = null; 
-                                                                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name || 'A')}&background=10b981&color=fff&bold=true`; 
-                                                                        }} 
-                                                                    />
-                                                                    <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-slate-900 rounded-full p-1 z-20 shadow-[0_0_15px_rgba(16,185,129,0.8)]">
-                                                                        <Icon name="Crown" size={12} />
+                                                        {/* Infographic Card Body */}
+                                                        <div className="relative h-full bg-[#0d1326] border border-slate-700/60 rounded-2xl flex flex-col overflow-hidden hover:border-slate-600 transition-colors shadow-xl">
+                                                            
+                                                            {/* Top Glowing Accent Line */}
+                                                            <div className={`h-1.5 w-full bg-gradient-to-r ${tier.config.cardGlow}`}></div>
+                                                            
+                                                            {/* Tech Background Grid (Infographic touch) */}
+                                                            <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+                                                            
+                                                            <div className="p-6 relative z-10 flex-1 flex flex-col">
+                                                                <div className="flex items-start justify-between mb-6">
+                                                                    <div className="flex items-center space-x-4">
+                                                                        <div className="relative shrink-0">
+                                                                            {/* Complex Radar Border */}
+                                                                            <div className={`absolute -inset-2 border border-dashed rounded-full animate-[spin_8s_linear_infinite] ${tier.config.borderSpin}`}></div>
+                                                                            <div className={`absolute -inset-2 border border-dotted rounded-full animate-[spin_12s_linear_infinite_reverse] ${tier.config.borderSpin} opacity-50`}></div>
+                                                                            <img 
+                                                                                src={emp.photo} 
+                                                                                alt={emp.name} 
+                                                                                className="relative w-14 h-14 rounded-full object-cover border-2 border-[#0d1326] z-10 shadow-lg" 
+                                                                                onError={(e) => { 
+                                                                                    e.target.onerror = null; 
+                                                                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name || 'A')}&background=${tier.config.avatarFallback}&color=fff&bold=true`; 
+                                                                                }} 
+                                                                            />
+                                                                            <div className={`absolute -bottom-2 -right-2 text-slate-900 rounded-full p-1 z-20 ${tier.config.barBase} shadow-md`}>
+                                                                                <Icon name={tier.icon} size={12} />
+                                                                            </div>
+                                                                        </div>
+                                                                        <div>
+                                                                            <h4 className="text-[18px] font-black text-white font-display tracking-tight truncate max-w-[140px]">{emp.name}</h4>
+                                                                            <div className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded inline-block mt-1 border ${tier.config.badgeBg} ${tier.config.badgeText} shadow-sm`}>
+                                                                                {tier.tierName}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Circular Infographic Gauge */}
+                                                                    <div className="relative w-14 h-14 flex items-center justify-center shrink-0">
+                                                                        <div className="absolute inset-0 bg-slate-900/50 rounded-full shadow-inner border border-slate-700/50"></div>
+                                                                        <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                                                            {/* Background Ring */}
+                                                                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#1e293b" strokeWidth="3" />
+                                                                            {/* 100% Ring */}
+                                                                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={`${Math.min(emp.pct, 100)}, 100`} className={tier.config.textMain} />
+                                                                            {/* Overachieved Ring Layer */}
+                                                                            {emp.pct > 100 && (
+                                                                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={`${Math.min(emp.pct - 100, 100)}, 100`} className={`${tier.config.textSec} opacity-80`} />
+                                                                            )}
+                                                                        </svg>
+                                                                        <span className="text-[11px] font-black text-white tabular-nums z-10">{Math.floor(emp.pct)}%</span>
                                                                     </div>
                                                                 </div>
-                                                                <div>
-                                                                    <h4 className="text-[18px] font-black text-white font-display tracking-tight">{emp.name}</h4>
-                                                                    <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded inline-block mt-1 border border-emerald-500/20">
-                                                                        Elite Tier
+
+                                                                {/* Infographic Data Architecture */}
+                                                                <div className="flex-1 flex flex-col justify-end">
+                                                                    <div className="flex justify-between items-end mb-2">
+                                                                        <div className="flex flex-col">
+                                                                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center mb-0.5"><Icon name="Target" size={10} className="mr-1"/> Target</span>
+                                                                            <span className="text-[13px] font-bold text-slate-300 tabular-nums">{formatCurrency(emp.target)}</span>
+                                                                        </div>
+                                                                        <div className="flex flex-col items-end">
+                                                                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center mb-0.5"><Icon name="TrendingUp" size={10} className={`mr-1 ${tier.config.textMain}`}/> Achieved</span>
+                                                                            <span className={`text-[16px] font-black tabular-nums ${tier.config.textMain}`}>{formatCurrency(emp.revenue)}</span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Physical Goal Line Bar Graph */}
+                                                                    <div className="relative w-full h-3.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700 shadow-inner mt-1">
+                                                                        {/* Target Marker (The Goal) */}
+                                                                        <div className="absolute top-0 bottom-0 border-r-2 border-dashed border-slate-400 z-20" style={{ left: `${targetBarPct}%` }}></div>
+                                                                        
+                                                                        {/* Achieved Base */}
+                                                                        <div className={`absolute top-0 left-0 h-full ${tier.config.barBase}`} style={{ width: `${Math.min(targetBarPct, 100)}%` }}></div>
+                                                                        
+                                                                        {/* Achieved Over Target Segment */}
+                                                                        {emp.revenue > emp.target && (
+                                                                            <div className={`absolute top-0 h-full ${tier.config.barOver}`} style={{ left: `${targetBarPct}%`, width: `${100 - targetBarPct}%` }}>
+                                                                                <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.3) 4px, rgba(255,255,255,0.3) 8px)' }}></div>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Mini HUD Stats */}
+                                                                    <div className={`mt-5 grid grid-cols-2 gap-3 bg-slate-950/50 rounded-xl p-3.5 border border-slate-800/80 relative overflow-hidden group-hover:bg-slate-900/80 transition-colors`}>
+                                                                        <div className={`absolute right-0 top-0 w-20 h-20 opacity-[0.08] blur-xl rounded-full ${tier.config.bgGlow1}`}></div>
+                                                                        <div>
+                                                                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center"><Icon name="Award" size={10} className={`mr-1 ${tier.config.textMain}`}/> Overachieved</p>
+                                                                            <p className={`text-[14px] font-black tabular-nums ${tier.config.textMain}`}>+{formatCurrency(overachieved)}</p>
+                                                                        </div>
+                                                                        <div>
+                                                                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center"><Icon name="Zap" size={10} className={`mr-1 ${tier.config.textSec}`}/> Multiplier</p>
+                                                                            <p className={`text-[14px] font-black tabular-nums ${tier.config.textSec}`}>{(emp.revenue / (emp.target || 1)).toFixed(2)}x Quota</p>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <div className="text-right">
-                                                                <div className="text-3xl font-black text-white tracking-tighter drop-shadow-md">
-                                                                    {formatPercent(emp.pct)}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Infographic Data Grid */}
-                                                        <div className="grid grid-cols-2 gap-3 mb-4 bg-slate-950/50 rounded-xl p-3.5 border border-slate-800">
-                                                            <div>
-                                                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center"><Icon name="TrendingUp" size={10} className="mr-1 text-emerald-500"/> Total Rev</p>
-                                                                <p className="text-[15px] font-black text-emerald-400 tabular-nums">{formatCurrency(emp.revenue)}</p>
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center"><Icon name="Award" size={10} className="mr-1 text-cyan-400"/> Overachieved</p>
-                                                                <p className="text-[15px] font-black text-cyan-400 tabular-nums">+{formatCurrency(overachieved)}</p>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Dual-Layer Progress Bar Infographic */}
-                                                        <div className="relative w-full h-2 bg-slate-800 rounded-full overflow-hidden mt-2 border border-slate-700">
-                                                            {/* Base 100% Green Line */}
-                                                            <div className="absolute top-0 left-0 h-full bg-emerald-500" style={{ width: '100%' }}></div>
-                                                            {/* Overachieved Cyan Line */}
-                                                            {emp.pct > 100 && (
-                                                                <div className="absolute top-0 left-0 h-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" style={{ width: `${Math.min(emp.pct - 100, 100)}%`, opacity: 0.9 }}>
-                                                                    <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(45deg, rgba(255,255,255,0.4) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.4) 75%, transparent 75%, transparent)', backgroundSize: '10px 10px' }}></div>
-                                                                </div>
-                                                            )}
                                                         </div>
                                                     </div>
-                                                </div>
-                                            )})}
+                                                )})}
+                                            </div>
                                         </div>
-                                    </div>
+                                    ))}
                                 </div>
                             )}
 
