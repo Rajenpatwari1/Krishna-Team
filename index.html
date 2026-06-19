@@ -165,7 +165,14 @@
             const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, getFirestore } = window.firebaseDeps;
             try {
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'sales-dashboard-auth';
-                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+                    apiKey: "AIzaSyDUanBEhwScdxtXrs_ExzU7NC63D-twILw",
+                    authDomain: "one-paper-542ca.firebaseapp.com",
+                    projectId: "one-paper-542ca",
+                    storageBucket: "one-paper-542ca.appspot.com",
+                    messagingSenderId: "927884948369",
+                    appId: "1:927884948369:web:d3de46b8f1fd54f4b5e030"
+                };
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app); db = getFirestore(app);
                 if (typeof __initial_auth_token !== 'undefined') await signInWithCustomToken(auth, __initial_auth_token);
