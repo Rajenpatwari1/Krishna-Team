@@ -1169,20 +1169,34 @@
             useEffect(() => {
                 let unsubscribe = null;
                 const setup = async () => {
+                    const defaultAuth = { sharedPassword: 'dashboard123', adminPassword: 'admin' };
                     const success = await initFirebase();
+                    
                     if (success && window.firebaseDeps) {
                         const { doc, setDoc, onSnapshot } = window.firebaseDeps;
                         const appId = typeof __app_id !== 'undefined' ? __app_id : 'sales-dashboard-auth';
                         const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'auth_config');
                         
                         unsubscribe = onSnapshot(configRef, async (docSnap) => {
-                            if (!docSnap.exists()) await setDoc(configRef, { sharedPassword: 'dashboard123', adminPassword: 'admin' });
+                            if (!docSnap.exists()) {
+                                setAuthConfig(defaultAuth);
+                                if (authState === 'loading') setAuthState('login');
+                                try { await setDoc(configRef, defaultAuth); } catch(e) {}
+                            }
                             else {
                                 setAuthConfig(docSnap.data());
                                 if (authState === 'loading') setAuthState('login');
                             }
-                        }, () => { setLoginError("Could not connect to secure backend."); setAuthState('login'); });
-                    } else { setLoginError("Security failed."); setAuthState('login'); }
+                        }, () => { 
+                            setAuthConfig(defaultAuth);
+                            setLoginError("Offline Mode: Using default passwords."); 
+                            setAuthState('login'); 
+                        });
+                    } else { 
+                        setAuthConfig(defaultAuth);
+                        setLoginError("External Host Detected: Using default passwords."); 
+                        setAuthState('login'); 
+                    }
                 };
                 setup();
                 return () => { if (unsubscribe) unsubscribe(); };
