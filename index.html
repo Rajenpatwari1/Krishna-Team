@@ -1,1178 +1,1226 @@
 <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Sales Dashboard</title>
-        
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-        
-        <!-- Tailwind CSS -->
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script>
-            tailwind.config = {
-                theme: {
-                    extend: {
-                        fontFamily: { 
-                            sans: ['Inter', 'sans-serif'],
-                            display: ['Plus Jakarta Sans', 'sans-serif']
-                        },
-                        colors: {
-                            primary: { 50: '#eff6ff', 100: '#dbeafe', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a' },
-                            emerald: { 50: '#ecfdf5', 100: '#d1fae5', 400: '#34d399', 500: '#10b981', 600: '#059669', 900: '#064e3b' },
-                            slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a' }
-                        },
-                        boxShadow: {
-                            'glass': '0 8px 32px 0 rgba(15, 23, 42, 0.04)',
-                            'float': '0 20px 40px -15px rgba(15, 23, 42, 0.05)',
-                            'glow-primary': '0 0 20px rgba(59, 130, 246, 0.5)',
-                            'glow-emerald': '0 0 20px rgba(16, 185, 129, 0.5)',
-                        },
-                        backgroundImage: {
-                            'mesh-light': 'radial-gradient(at 0% 0%, hsla(210, 100%, 97%, 1) 0px, transparent 50%), radial-gradient(at 100% 0%, hsla(250, 100%, 98%, 1) 0px, transparent 50%)',
-                            'card-dark': 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                            'card-primary': 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-                        }
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Performance Dashboard</title>
+    
+    <!-- Fonts: Google Sans / Inter style -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Inter', 'sans-serif']
+                    },
+                    colors: {
+                        google: { blue: '#1a73e8', hover: '#1557b0', light: '#e8f0fe' },
+                        meta: { bg: '#f4f6f8', border: '#dadce0', text: '#202124' },
+                        dash: { dark: '#1a1f2c', darkbox: '#0f172a', card: '#1e293b' }
+                    },
+                    boxShadow: {
+                        'card': '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)',
+                        'glow-green': '0 0 20px rgba(16, 185, 129, 0.4)',
+                        'glow-blue': '0 0 20px rgba(59, 130, 246, 0.4)',
+                        'glow-yellow': '0 0 20px rgba(234, 179, 8, 0.4)',
                     }
                 }
             }
-        </script>
+        }
+    </script>
 
-        <!-- React & ReactDOM -->
-        <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-        <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"></script>
+    
+    <!-- EmailJS SDK for sending real emails -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+    <!-- Firebase Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.firebaseDeps = { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc };
+    </script>
+
+    <style>
+        body { 
+            background-color: #f4f6f8;
+            color: #202124;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+        .tabular-nums { font-variant-numeric: tabular-nums; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .blend-logo { mix-blend-mode: multiply; }
         
-        <!-- Babel -->
-        <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
+        /* Infographic Grid Background */
+        .bg-grid-pattern {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        }
+        .bg-grid-pattern-dark {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+        }
+
+        /* --- NEW DASHBOARD ANIMATIONS & PREMIUM BADGES --- */
+        @keyframes shimmerSweep {
+            0% { transform: translateX(-150%) skewX(-15deg); }
+            50%, 100% { transform: translateX(150%) skewX(-15deg); }
+        }
+        .animate-shimmer-sweep { animation: shimmerSweep 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
         
-        <!-- Lucide Icons -->
-        <script src="https://unpkg.com/lucide@latest"></script>
+        @keyframes float-slow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(3deg); }
+        }
+        .animate-float-slow { animation: float-slow 4s ease-in-out infinite; }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(255,255,255,0.1); }
+            50% { box-shadow: 0 0 25px rgba(255,255,255,0.6); }
+        }
+        .animate-pulse-glow { animation: pulse-glow 2s infinite; }
+
+        /* Premium Sales Badges (Metallic 3D Effect) */
+        .badge-premium {
+            position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 4px; padding: 3px 10px; font-weight: 900; font-size: 8px;
+            letter-spacing: 0.12em; text-transform: uppercase;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.5);
+            z-index: 10;
+        }
+        .badge-legends { background: linear-gradient(135deg, #b45309, #f59e0b, #fcd34d); color: #fff; border: 1px solid #fde68a; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+        .badge-masters { background: linear-gradient(135deg, #6b21a8, #a855f7, #d8b4fe); color: #fff; border: 1px solid #e9d5ff; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+        .badge-elites { background: linear-gradient(135deg, #047857, #10b981, #6ee7b7); color: #fff; border: 1px solid #a7f3d0; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
         
-        <!-- Chart.js -->
-        <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"></script>
+        .badge-glare {
+            position: absolute; top: 0; left: 0; width: 60%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.7), transparent);
+            animation: shimmerSweep 3s infinite; pointer-events: none;
+        }
 
-        <style>
-            body { 
-                background-color: #f8fafc; 
-                background-image: radial-gradient(at 0% 0%, hsla(210, 100%, 95%, 1) 0px, transparent 50%), 
-                                radial-gradient(at 100% 0%, hsla(250, 100%, 96%, 1) 0px, transparent 50%),
-                                linear-gradient(rgba(203, 213, 225, 0.35) 1px, transparent 1px),
-                                linear-gradient(90deg, rgba(203, 213, 225, 0.35) 1px, transparent 1px);
-                background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
-                background-attachment: fixed;
-                color: #0f172a; 
-                overflow-x: hidden;
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
-            }
-            
-            .tabular-nums { font-variant-numeric: tabular-nums; }
-            
-            /* Modern Scrollbar */
-            ::-webkit-scrollbar { width: 6px; height: 6px; }
-            ::-webkit-scrollbar-track { background: transparent; }
-            ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-            ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-            
-            @keyframes slideUpFade {
-                from { opacity: 0; transform: translateY(15px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-            .animate-slide-up {
-                animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            }
+        /* --- NEW INTERACTIVE ANIMATIONS --- */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up { opacity: 0; animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        .delay-400 { animation-delay: 0.4s; }
+        
+        @keyframes growWidth {
+            from { max-width: 0%; }
+            to { max-width: 100%; }
+        }
+        .animate-grow-width { animation: growWidth 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; overflow: hidden; }
+        
+        /* Smooth card hover states */
+        .hover-card-lift { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .hover-card-lift:hover { transform: translateY(-6px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); z-index: 20; }
+        .hover-card-lift-dark { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .hover-card-lift-dark:hover { transform: translateY(-6px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2); z-index: 20; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-            /* Smooth Table Hover Transitions */
-            .table-row-hover {
-                transition: all 0.2s ease-in-out;
-            }
-            .table-row-hover:hover {
-                background-color: #ffffff;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-                z-index: 10;
-                position: relative;
-            }
-        </style>
-    </head>
-    <body>
-        <div id="root"></div>
+    <script type="text/babel" data-presets="react,env">
+        /** @jsx React.createElement */
+        const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
-        <script type="text/babel" data-presets="react,env">
-            /** @jsx React.createElement */
-            const { useState, useEffect, useMemo, useRef, useCallback } = React;
+        // --- EMAILJS CONFIGURATION ---
+        // If emails fail with "Service ID not found", check these keys at https://dashboard.emailjs.com/
+        const EMAILJS_SERVICE_ID = "service_ub1jpem"; 
+        const EMAILJS_TEMPLATE_ID = "template_uvebuvo";
+        const EMAILJS_PUBLIC_KEY = "UfJGx42L-EKqI6hpA";
 
-            const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val || 0);
-            const formatNumber = (val) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 1 }).format(val || 0);
-            const formatPercent = (val) => `${formatNumber(val)}%`;
-            
-            // Smart Profile Picture Resolver
-            const getProfilePic = (name, row) => {
-                if (!name) return null;
-                const n = name.toLowerCase();
-                
-                // Using Google Drive Thumbnail API which is significantly more reliable for embedding images
-                if (n.includes('karan')) return 'https://drive.google.com/thumbnail?id=1AOFBaNn_3QoZoF7Mgf1i82kUKOFRcfou&sz=w200';
-                if (n.includes('meghna')) return 'https://drive.google.com/thumbnail?id=1FjX8XrdFUNtqEmJYTW1yd03BZcS58Tuo&sz=w200';
-                
-                if (row) {
-                    let photoUrl = null;
-                    const keys = Object.keys(row);
-                    
-                    for (let k of keys) {
-                        if (k.toLowerCase().includes('photo') || k.toLowerCase().includes('image') || k.toLowerCase().includes('link')) {
-                            photoUrl = row[k]; break;
-                        }
+        // Firebase Setup
+        let db, auth;
+        const initFirebase = async () => {
+            if (!window.firebaseDeps) return false;
+            const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, getFirestore } = window.firebaseDeps;
+            try {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'sales-dashboard-auth';
+                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app); db = getFirestore(app);
+                if (typeof __initial_auth_token !== 'undefined') await signInWithCustomToken(auth, __initial_auth_token);
+                else await signInAnonymously(auth);
+                return true;
+            } catch (e) { return false; }
+        };
+
+        const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val || 0);
+        const formatNumber = (val) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 1 }).format(val || 0);
+        const formatPercent = (val) => `${formatNumber(val)}%`;
+        
+        const getProfilePic = (name, row) => {
+            if (!name) return null;
+            const n = name.toLowerCase();
+            if (n.includes('karan')) return 'https://drive.google.com/thumbnail?id=1AOFBaNn_3QoZoF7Mgf1i82kUKOFRcfou&sz=w200';
+            if (n.includes('meghna')) return 'https://drive.google.com/thumbnail?id=1FjX8XrdFUNtqEmJYTW1yd03BZcS58Tuo&sz=w200';
+            if (row) {
+                let photoUrl = null;
+                const keys = Object.keys(row);
+                for (let k of keys) { if (k.toLowerCase().includes('photo') || k.toLowerCase().includes('image') || k.toLowerCase().includes('link')) { photoUrl = row[k]; break; } }
+                if (!photoUrl) { for (let k of keys) { if (typeof row[k] === 'string' && row[k].trim().startsWith('http')) { photoUrl = row[k].trim(); break; } } }
+                if (photoUrl && typeof photoUrl === 'string' && photoUrl.trim() !== '') {
+                    if (photoUrl.includes('drive.google.com/file/d/')) {
+                        const match = photoUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                        if (match) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w200`;
                     }
-                    if (!photoUrl) {
-                        for (let k of keys) {
-                            if (typeof row[k] === 'string' && row[k].trim().startsWith('http')) {
-                                photoUrl = row[k].trim(); break;
-                            }
-                        }
-                    }
-
-                    if (photoUrl && typeof photoUrl === 'string' && photoUrl.trim() !== '') {
-                        if (photoUrl.includes('drive.google.com/file/d/')) {
-                            const match = photoUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
-                            if (match) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w200`;
-                        }
-                        return photoUrl;
-                    }
+                    return photoUrl;
                 }
-                
-                return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=e2e8f0&color=475569&bold=true`;
-            };
+            }
+            return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=e8f0fe&color=1a73e8&bold=true`;
+        };
 
-            const parseCSV = (csvText) => {
-                const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== '');
-                if (lines.length < 2) return [];
-                const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-                
-                return lines.slice(1).map(line => {
-                    const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-                    const obj = {};
-                    headers.forEach((header, i) => {
-                        let val = values[i] ? values[i].replace(/^"|"$/g, '').trim() : '';
-                        let cleanStr = val.replace(/[₹$,%]/g, '');
-                        if (!isNaN(cleanStr) && cleanStr !== '') val = Number(cleanStr);
-                        obj[header] = val;
-                    });
-                    return obj;
+        const parseCSV = (csvText) => {
+            const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== '');
+            if (lines.length < 2) return [];
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+            return lines.slice(1).map(line => {
+                const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+                const obj = {};
+                headers.forEach((header, i) => {
+                    let val = values[i] ? values[i].replace(/^"|"$/g, '').trim() : '';
+                    let cleanStr = val.replace(/[₹$,%]/g, '');
+                    if (!isNaN(cleanStr) && cleanStr !== '') val = Number(cleanStr);
+                    obj[header] = val;
                 });
-            };
+                return obj;
+            });
+        };
 
-            const Icon = ({ name, size = 18, className = "" }) => {
-                const iconRef = useRef(null);
-                useEffect(() => {
-                    if (window.lucide && iconRef.current && name) {
-                        const iconMap = { 'CheckCircle': 'CircleCheck', 'CheckCircle2': 'CircleCheck', 'AlertTriangle': 'TriangleAlert', 'RefreshCcw': 'RefreshCw', 'TrendingUp': 'TrendingUp', 'TrendingDown': 'TrendingDown' };
-                        const mappedName = iconMap[name] || name;
-                        if (window.lucide.icons[mappedName]) {
-                            iconRef.current.innerHTML = `<i data-lucide="${mappedName}"></i>`;
-                            window.lucide.createIcons({ icons: { [mappedName]: window.lucide.icons[mappedName] }, nameAttr: 'data-lucide', attrs: { class: className, width: size, height: size, 'stroke-width': 2.5 } });
-                        }
+        const Icon = ({ name, size = 18, className = "" }) => {
+            const iconRef = useRef(null);
+            useEffect(() => {
+                if (window.lucide && iconRef.current && name) {
+                    const iconMap = { 'CheckCircle': 'CircleCheck', 'CheckCircle2': 'CircleCheck', 'AlertTriangle': 'TriangleAlert', 'RefreshCcw': 'RefreshCw', 'TrendingUp': 'TrendingUp', 'TrendingDown': 'TrendingDown' };
+                    const mappedName = iconMap[name] || name;
+                    if (window.lucide.icons[mappedName]) {
+                        iconRef.current.innerHTML = `<i data-lucide="${mappedName}"></i>`;
+                        window.lucide.createIcons({ icons: { [mappedName]: window.lucide.icons[mappedName] }, nameAttr: 'data-lucide', attrs: { class: className, width: size, height: size, 'stroke-width': 2 } });
                     }
-                }, [name, className, size]);
-                return <span ref={iconRef} className={`inline-flex items-center justify-center ${className}`}></span>;
-            };
+                }
+            }, [name, className, size]);
+            return <span ref={iconRef} className={`inline-flex items-center justify-center ${className}`}></span>;
+        };
 
-            const Card = ({ children, className = "", bodyClass = "p-6", title, action }) => (
-                <div className={`bg-white/80 backdrop-blur-xl rounded-2xl border border-white shadow-glass hover:shadow-float transition-all duration-300 flex flex-col h-full ${className}`}>
-                    {(title || action) && (
-                        <div className="flex flex-wrap gap-4 justify-between items-center px-7 pt-6 pb-2 border-b border-slate-100/50">
-                            {title && <h3 className="text-sm font-bold text-slate-800 font-display tracking-wide">{title}</h3>}
-                            {action && <div>{action}</div>}
+        // --- Infographic Top Cards (Matching Screenshot 1) ---
+        const TopCardsRow = ({ kpis }) => {
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
+                    {/* 1. Total Target */}
+                    <div className="hover-card-lift-dark animate-slide-up bg-gradient-to-br from-[#1a1f2c] to-[#0f172a] border border-gray-800 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden shadow-lg">
+                        <div className="absolute -top-12 -right-12 w-32 h-32 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                        {/* Animated Floating Rupee Symbol */}
+                        <div className="absolute -bottom-8 -right-2 text-[140px] font-black text-white opacity-[0.03] select-none animate-float-slow leading-none pointer-events-none">₹</div>
+                        <div className="flex justify-between items-start z-10 relative">
+                            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Total Target</span>
+                            <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center shadow-glow-green">
+                                <Icon name="Target" size={16} className="text-teal-400" />
+                            </div>
                         </div>
-                    )}
-                    <div className={`flex-grow ${bodyClass}`}>
-                        {children}
+                        <div className="mt-6 z-10 relative">
+                            <h2 className="text-3xl font-extrabold text-white tabular-nums">{formatCurrency(kpis.totalTarget)}</h2>
+                        </div>
+                    </div>
+
+                    {/* 2. Revenue Achieved (Green Wavy) */}
+                    <div className="hover-card-lift animate-slide-up delay-100 bg-gradient-to-br from-emerald-500 to-teal-600 border border-emerald-400/30 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden shadow-lg shadow-emerald-500/20">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                        <svg className="absolute bottom-0 left-0 w-full h-auto opacity-30 text-green-900 pointer-events-none" viewBox="0 0 1440 320" fill="currentColor"><path d="M0,160L48,176C96,192,192,224,288,213.3C384,203,480,149,576,144C672,139,768,181,864,197.3C960,213,1056,203,1152,176C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
+                        <div className="flex justify-between items-start z-10 relative">
+                            <span className="text-[11px] font-bold text-white uppercase tracking-widest">Revenue Achieved</span>
+                            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                                <Icon name="CheckCircle2" size={16} className="text-white" />
+                            </div>
+                        </div>
+                        <div className="mt-4 z-10 relative">
+                            <h2 className="text-3xl font-extrabold text-white tabular-nums mb-3">{formatCurrency(kpis.totalAchieved)}</h2>
+                            <span className="inline-block px-2.5 py-1 bg-black/20 text-white text-[10px] font-bold rounded backdrop-blur-sm border border-white/10">
+                                {formatPercent(kpis.achievementPercent)} ACHIEVED
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* 3. Shortfall Gap (White Wavy) */}
+                    <div className="hover-card-lift animate-slide-up delay-200 bg-gradient-to-br from-white to-red-50/40 border border-red-100 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden shadow-lg shadow-red-500/5">
+                        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-red-100/50 rounded-full blur-3xl pointer-events-none"></div>
+                        <svg className="absolute bottom-0 left-0 w-full h-auto opacity-10 text-red-500 pointer-events-none" viewBox="0 0 1440 320" fill="currentColor"><path d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,218.7C672,235,768,245,864,224C960,203,1056,149,1152,133.3C1248,117,1344,139,1392,149.3L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
+                        <div className="flex justify-between items-start z-10 relative">
+                            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Shortfall Gap</span>
+                            <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.15)]">
+                                <Icon name="AlertTriangle" size={16} className="text-red-500" />
+                            </div>
+                        </div>
+                        <div className="mt-4 z-10 relative">
+                            <h2 className="text-3xl font-extrabold text-gray-900 tabular-nums mb-3">{formatCurrency(kpis.shortfall)}</h2>
+                            <span className="inline-block px-2.5 py-1 border border-red-200 text-red-600 text-[10px] font-bold rounded bg-white/80 backdrop-blur-sm shadow-sm">
+                                {formatPercent(kpis.shortfallPercent)} REMAINING
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* 4. Top Manager */}
+                    <div className="hover-card-lift-dark animate-slide-up delay-300 bg-gradient-to-br from-[#1a1f2c] to-[#0f172a] border border-gray-800 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden shadow-lg group">
+                        {/* Shimmer sweep animation */}
+                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer-sweep pointer-events-none z-0"></div>
+                        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz48L3N2Zz4=')] opacity-50 pointer-events-none"></div>
+                        <Icon name="Award" size={120} className="absolute -right-4 -bottom-4 text-white opacity-[0.03] transform rotate-12 pointer-events-none" />
+                        <div className="flex items-center space-x-2 z-10 relative mb-4">
+                            <div className="w-6 h-6 rounded bg-white/5 flex items-center justify-center shadow-glow-green border border-white/10 animate-float-slow"><Icon name="Star" size={12} className="text-white" /></div>
+                            <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">Top Manager</span>
+                        </div>
+                        <div className="flex items-center space-x-4 z-10 relative">
+                            <img src={kpis.topManager?.photo} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-[#1a1f2c] animate-pulse-glow" />
+                            <div>
+                                <h3 className="text-2xl font-bold text-white mb-1 truncate max-w-[100px] drop-shadow-md">{kpis.topManager?.name?.split(' ')[0] || '-'}</h3>
+                                <div className="text-[10px] text-gray-400 font-semibold tracking-wider leading-tight">{formatPercent(kpis.topManager?.pct)}<br/>TARGET HIT</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 5. Top BDE */}
+                    <div className="hover-card-lift-dark animate-slide-up delay-400 bg-gradient-to-br from-[#1e3a8a] to-[#312e81] border border-blue-400/30 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden shadow-lg shadow-blue-500/20 group">
+                        {/* Shimmer sweep animation */}
+                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer-sweep pointer-events-none z-0" style={{animationDelay: '1s'}}></div>
+                        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNykiLz48L3N2Zz4=')] opacity-50 pointer-events-none"></div>
+                        <Icon name="TrendingUp" size={120} className="absolute -right-4 -bottom-4 text-white opacity-[0.08] transform -rotate-12 pointer-events-none" />
+                        <div className="flex items-center space-x-2 z-10 relative mb-4">
+                            <div className="w-6 h-6 rounded bg-white/10 flex items-center justify-center shadow-glow-blue border border-white/20 animate-float-slow" style={{animationDelay: '0.5s'}}><Icon name="Star" size={12} className="text-white" /></div>
+                            <span className="text-[11px] font-bold text-white/90 uppercase tracking-widest">Top BDE Performer</span>
+                        </div>
+                        <div className="flex items-center space-x-4 z-10 relative">
+                            <img src={kpis.topBDE?.photo} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-[#3b82f6] shadow-[0_0_15px_rgba(255,255,255,0.4)] animate-pulse-glow" />
+                            <div>
+                                <h3 className="text-2xl font-bold text-white mb-1 truncate max-w-[100px] drop-shadow-md">{kpis.topBDE?.name?.split(' ')[0] || '-'}</h3>
+                                <div className="inline-block px-2 py-1 bg-white/20 border border-white/30 text-white text-[10px] font-bold rounded backdrop-blur-sm mt-1 shadow-sm relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer-sweep pointer-events-none"></div>
+                                    {formatPercent(kpis.topBDE?.pct)} TARGET HIT
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             );
+        };
 
-            const KPICard = ({ title, value, subtext, icon, format = 'number', theme = 'default' }) => {
-                const formattedValue = format === 'currency' ? formatCurrency(value) : format === 'percent' ? formatPercent(value) : formatNumber(value);
-                
-                const themes = {
-                    default: {
-                        bg: "bg-white border-white",
-                        title: "text-slate-500",
-                        value: "text-transparent bg-clip-text bg-gradient-to-br from-slate-900 to-slate-600",
-                        iconBg: "bg-slate-100 text-slate-600",
-                        iconGlow: "",
-                        subtext: "bg-slate-50 text-slate-500 border-slate-100"
+        const DonutChart = ({ stats }) => {
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+
+            useEffect(() => {
+                if (!chartRef.current || !window.Chart) return;
+                if (chartInstance.current) chartInstance.current.destroy();
+
+                const ctx = chartRef.current.getContext('2d');
+                chartInstance.current = new window.Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Target Met', 'Good', 'Average', 'At Risk'],
+                        datasets: [{
+                            data: [stats.targetMet, stats.good, stats.average, stats.atRisk],
+                            // Emerald, Blue, Amber, Red (matching screenshot exactly)
+                            backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
                     },
-                    dark: {
-                        bg: "bg-card-dark border-slate-700",
-                        title: "text-slate-400",
-                        value: "text-white",
-                        iconBg: "bg-white/10 text-primary-400",
-                        iconGlow: "shadow-glow-primary",
-                        subtext: "bg-white/10 text-slate-300 border-white/10"
-                    },
-                    success: {
-                        bg: "bg-gradient-to-br from-emerald-500 to-emerald-700 border-emerald-600",
-                        title: "text-emerald-100",
-                        value: "text-white",
-                        iconBg: "bg-white/20 text-white",
-                        iconGlow: "shadow-[0_0_15px_rgba(255,255,255,0.3)]",
-                        subtext: "bg-black/10 text-emerald-50 border-black/10"
-                    },
-                    danger: {
-                        bg: "bg-gradient-to-br from-white to-red-50 border-red-100",
-                        title: "text-slate-500",
-                        value: "text-slate-800",
-                        iconBg: "bg-red-100 text-red-600",
-                        iconGlow: "shadow-[0_0_15px_rgba(220,38,38,0.15)]",
-                        subtext: "bg-red-50 text-red-600 border-red-200"
+                    options: {
+                        cutout: '82%',
+                        spacing: 4, // Creates the transparent gaps between segments
+                        borderRadius: 10, // Creates the pill-like rounded edges
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: true }
+                        },
+                        maintainAspectRatio: false
                     }
+                });
+
+                return () => { if (chartInstance.current) chartInstance.current.destroy(); }
+            }, [stats]);
+
+            return (
+                <div className="relative w-48 h-48 mx-auto">
+                    <canvas ref={chartRef}></canvas>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span className="text-4xl font-extrabold text-gray-900">{stats.total}</span>
+                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Total BDEs</span>
+                    </div>
+                </div>
+            );
+        };
+
+        const TeamOverviewRow = ({ stats, contributors, kpis }) => {
+            return (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-slide-up delay-100">
+                    {/* Left: Donut Chart Overview */}
+                    <div className="hover-card-lift bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-6 lg:col-span-1 flex flex-col relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-gray-100 to-gray-200"></div>
+                        <h3 className="text-sm font-bold text-gray-800 tracking-tight mb-8">Team Performance Overview</h3>
+                        
+                        <div className="flex-grow flex flex-col justify-center">
+                            <DonutChart stats={stats} />
+                            
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-4 mt-10 px-2">
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2"></span><span className="font-bold text-gray-500 uppercase tracking-widest text-[9px]">Target Met</span></div>
+                                    <span className="font-bold text-gray-900 text-xs">{stats.targetMet}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 mr-2"></span><span className="font-bold text-gray-500 uppercase tracking-widest text-[9px]">Good</span></div>
+                                    <span className="font-bold text-gray-900 text-xs">{stats.good}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 mr-2"></span><span className="font-bold text-gray-500 uppercase tracking-widest text-[9px]">Average</span></div>
+                                    <span className="font-bold text-gray-900 text-xs">{stats.average}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-red-500 mr-2"></span><span className="font-bold text-gray-500 uppercase tracking-widest text-[9px]">At Risk</span></div>
+                                    <span className="font-bold text-gray-900 text-xs">{stats.atRisk}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right: Top Contributors List */}
+                    <div className="hover-card-lift bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-6 lg:col-span-2 flex flex-col relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-50 to-indigo-50"></div>
+                        <h3 className="text-sm font-bold text-gray-800 tracking-tight mb-6">Top Sales Contributors</h3>
+                        <div className="flex flex-col space-y-3.5">
+                            {contributors.map((emp, idx) => {
+                                const rankColor = idx === 0 ? 'text-amber-500' : idx === 1 ? 'text-gray-400' : idx === 2 ? 'text-amber-700' : 'text-gray-300';
+                                const bgTint = idx < 3 ? 'bg-[#fffcf5]' : 'bg-white';
+                                const borderTint = idx < 3 ? 'border-amber-100/50' : 'border-gray-100';
+                                const pctOfTotal = kpis.totalTarget > 0 ? (emp.achieved / kpis.totalTarget) * 100 : 0;
+                                const progressPct = Math.min((emp.target > 0 ? (emp.achieved / emp.target) : 0) * 100, 100);
+
+                                return (
+                                    <div key={idx} className={`relative rounded-xl border ${borderTint} p-3.5 flex items-center justify-between overflow-hidden shadow-[0_2px_10px_rgb(0,0,0,0.02)] ${bgTint}`}>
+                                        {/* Bottom Progress Line */}
+                                        <div className="absolute bottom-0 left-0 h-1 bg-google-blue rounded-r-full animate-grow-width" style={{ width: `${progressPct}%` }}></div>
+
+                                        <div className="flex items-center space-x-4">
+                                            <span className={`text-lg font-extrabold w-6 text-center ${rankColor}`}>#{idx + 1}</span>
+                                            <img src={emp.photo} alt={emp.name} className="w-10 h-10 rounded-full object-cover shadow-sm border border-white" />
+                                            <span className="font-bold text-gray-800 text-sm">{emp.name}</span>
+                                        </div>
+
+                                        <div className="flex flex-col items-end">
+                                            <div className="text-sm">
+                                                <span className="font-bold text-gray-900">{formatCurrency(emp.achieved)}</span>
+                                                <span className="text-gray-400 font-medium text-[11px] ml-1">/ {formatCurrency(emp.target)}</span>
+                                            </div>
+                                            <div className="mt-1.5 inline-block px-2 py-[3px] bg-[#1a1f2c] rounded text-[8px] font-bold text-white tracking-widest shadow-sm">
+                                                {formatNumber(pctOfTotal)}% OF OVERALL TARGET
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Dashboard = ({ userRole, currentUser, onLogout, onOpenAdmin }) => {
+            const [rawData, setRawData] = useState([]);
+            const [filters, setFilters] = useState({ month: 'All', manager: 'All', search: '' });
+            
+            const sourceUrl = 'https://docs.google.com/spreadsheets/d/1faXYMBSYEOlUNxmEMS6-LufCwHiOxk_sVKVvqVv3Q_o/gviz/tq?tqx=out:csv&sheet=Dashboard';
+
+            const fetchData = useCallback(async () => {
+                try {
+                    const response = await fetch(sourceUrl);
+                    if (!response.ok) throw new Error("Network error");
+                    const text = await response.text();
+                    const parsed = parseCSV(text);
+                    if (parsed.length > 0 && parsed[0]['Employee Name']) setRawData(parsed);
+                } catch (error) { console.warn("Using fallback data"); }
+            }, [sourceUrl]);
+
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(() => fetchData(), 15000);
+                return () => clearInterval(interval);
+            }, [fetchData]);
+
+            const availableMonths = useMemo(() => [...new Set(rawData.map(d => d.Month).filter(Boolean))].sort(), [rawData]);
+            const availableManagers = useMemo(() => [...new Set(rawData.map(d => d['Manager Name']).filter(Boolean))].sort(), [rawData]);
+
+            const filteredData = useMemo(() => {
+                const data = rawData.filter(row => {
+                    if (!row['Employee Name']) return false;
+                    const matchMonth = filters.month === 'All' || row.Month === filters.month;
+                    const matchManager = filters.manager === 'All' || row['Manager Name'] === filters.manager;
+                    const matchSearch = row['Employee Name']?.toLowerCase().includes(filters.search.toLowerCase()) || false;
+                    return matchMonth && matchManager && matchSearch;
+                });
+                return data.sort((a, b) => {
+                    const pctA = (Number(a['Sales Achieved']) || 0) / (Number(a.Target) || 1);
+                    const pctB = (Number(b['Sales Achieved']) || 0) / (Number(b.Target) || 1);
+                    return pctB - pctA;
+                });
+            }, [rawData, filters]);
+
+            const kpis = useMemo(() => {
+                if (!filteredData.length) return null;
+                let totalTarget = 0, totalAchieved = 0;
+                filteredData.forEach(row => { totalTarget += Number(row.Target) || 0; totalAchieved += Number(row['Sales Achieved']) || 0; });
+                
+                const achievementPercent = totalTarget > 0 ? (totalAchieved / totalTarget) * 100 : 0;
+                const shortfall = Math.max(0, totalTarget - totalAchieved);
+                const shortfallPercent = totalTarget > 0 ? (shortfall / totalTarget) * 100 : 0;
+                
+                let topEmp = null, topEmpPct = -1;
+                filteredData.forEach(emp => {
+                    const achieved = Number(emp['Sales Achieved']) || 0;
+                    const target = Number(emp.Target) || 0;
+                    // STRICT RULE: Must have more than 0 achieved AND more than 0 target to be Top BDE
+                    if (achieved > 0 && target > 0) {
+                        const pct = (achieved / target) * 100;
+                        if (pct > topEmpPct) { topEmpPct = pct; topEmp = emp; }
+                    }
+                });
+
+                const mgrStats = {};
+                filteredData.forEach(row => {
+                    const mgr = row['Manager Name'];
+                    if (!mgr) return;
+                    if (!mgrStats[mgr]) mgrStats[mgr] = { target: 0, achieved: 0 };
+                    mgrStats[mgr].target += Number(row.Target) || 0;
+                    mgrStats[mgr].achieved += Number(row['Sales Achieved']) || 0;
+                });
+
+                let topMgr = null, topMgrPct = -1;
+                Object.keys(mgrStats).forEach(mgr => {
+                    // STRICT RULE: Manager must have more than 0 achieved to be Top Manager
+                    if (mgrStats[mgr].achieved > 0 && mgrStats[mgr].target > 0) {
+                        const pct = (mgrStats[mgr].achieved / mgrStats[mgr].target) * 100;
+                        if (pct > topMgrPct) { topMgrPct = pct; topMgr = mgr; }
+                    }
+                });
+
+                return { 
+                    totalTarget, totalAchieved, achievementPercent, shortfall, shortfallPercent, 
+                    topBDE: topEmp ? { name: topEmp['Employee Name'], pct: topEmpPct, photo: getProfilePic(topEmp['Employee Name'], topEmp) } : null, 
+                    topManager: topMgr ? { name: topMgr, pct: topMgrPct, photo: getProfilePic(topMgr, null) } : null 
+                };
+            }, [filteredData]);
+
+            const performanceStats = useMemo(() => {
+                const stats = { targetMet: 0, good: 0, average: 0, atRisk: 0, total: filteredData.length };
+                filteredData.forEach(row => {
+                    const target = Number(row.Target) || 0;
+                    const achieved = Number(row['Sales Achieved']) || 0;
+                    const pct = target > 0 ? (achieved / target) * 100 : 0;
+                    if (pct >= 100) stats.targetMet++;
+                    else if (pct >= 75) stats.good++;
+                    else if (pct >= 40) stats.average++;
+                    else stats.atRisk++;
+                });
+                return stats;
+            }, [filteredData]);
+
+            const topContributors = useMemo(() => {
+                return [...filteredData]
+                    .map(row => ({
+                        name: row['Employee Name'],
+                        photo: getProfilePic(row['Employee Name'], row),
+                        target: Number(row.Target) || 0,
+                        achieved: Number(row['Sales Achieved']) || 0,
+                    }))
+                    .filter(emp => emp.achieved > 0) // STRICT RULE: Remove anyone with 0 achievements
+                    .sort((a, b) => b.achieved - a.achieved)
+                    .slice(0, 5); // Take Top 5
+            }, [filteredData]);
+
+            const teamMVPs = useMemo(() => {
+                if (!filteredData.length) return [];
+                const mgrMap = {};
+                filteredData.forEach(d => {
+                    const mgr = d['Manager Name'];
+                    if (!mgr) return;
+                    const rev = Number(d['Sales Achieved']) || 0;
+                    if (rev <= 0) return; // Must have revenue > 0 to be MVP
+                    if (!mgrMap[mgr] || rev > mgrMap[mgr].revenue) {
+                        mgrMap[mgr] = {
+                            name: d['Employee Name'], manager: mgr, revenue: rev, target: Number(d.Target) || 0,
+                            runRate: Number(d['Daily Run Rate']) || 0, photo: getProfilePic(d['Employee Name'], d), teamTarget: 0 
+                        };
+                    }
+                });
+                filteredData.forEach(d => {
+                    const mgr = d['Manager Name'];
+                    if (mgr && mgrMap[mgr]) mgrMap[mgr].teamTarget += (Number(d.Target) || 0);
+                });
+                return Object.values(mgrMap).sort((a, b) => b.revenue - a.revenue);
+            }, [filteredData]);
+
+            const achieverTiers = useMemo(() => {
+                if (!filteredData.length) return [];
+                const achievers = [...filteredData]
+                    .map(d => ({ 
+                        name: d['Employee Name'], revenue: Number(d['Sales Achieved']) || 0, target: Number(d.Target) || 0, 
+                        photo: getProfilePic(d['Employee Name'], d), pct: (Number(d.Target) || 0) > 0 ? ((Number(d['Sales Achieved']) || 0) / (Number(d.Target) || 1)) * 100 : 0
+                    }))
+                    .filter(d => d.pct >= 100).sort((a, b) => b.pct - a.pct);
+
+                const getTierConfig = (type) => {
+                    if (type === 'legends') return { containerBg: 'bg-[#0f172a]', cardBg: 'bg-[#1e293b]', border: 'border-amber-500/30', title: 'text-white', sub: 'text-amber-400', accent: 'amber', pillBg: 'badge-premium badge-legends' };
+                    if (type === 'masters') return { containerBg: 'bg-[#0f172a]', cardBg: 'bg-[#1e293b]', border: 'border-purple-500/30', title: 'text-white', sub: 'text-purple-400', accent: 'purple', pillBg: 'badge-premium badge-masters' };
+                    return { containerBg: 'bg-[#0f172a]', cardBg: 'bg-[#1e293b]', border: 'border-emerald-500/30', title: 'text-white', sub: 'text-emerald-400', accent: 'emerald', pillBg: 'badge-premium badge-elites' };
                 };
 
-                const t = themes[theme] || themes.default;
+                const tiers = [];
+                const legends = achievers.filter(a => a.pct >= 201);
+                if (legends.length > 0) tiers.push({ id: 'legends', title: 'Exceptional Performance', subtitle: `${legends.length} ASSOCIATES ACHIEVED 201%+`, icon: 'Crown', tierName: 'EXCEPTIONAL', config: getTierConfig('legends'), members: legends });
+                const masters = achievers.filter(a => a.pct >= 150 && a.pct < 201);
+                if (masters.length > 0) tiers.push({ id: 'masters', title: 'Outstanding Performance', subtitle: `${masters.length} ASSOCIATES ACHIEVED 150%+`, icon: 'Zap', tierName: 'OUTSTANDING', config: getTierConfig('masters'), members: masters });
+                const elites = achievers.filter(a => a.pct >= 100 && a.pct < 150);
+                if (elites.length > 0) tiers.push({ id: 'elites', title: 'Elite Performance', subtitle: `${elites.length} ASSOCIATES ACHIEVED 100%+`, icon: 'Target', tierName: 'ELITE', config: getTierConfig('elites'), members: elites });
 
-                return (
-                    <div className={`rounded-2xl p-7 border shadow-glass relative overflow-hidden group hover:-translate-y-1 hover:shadow-float transition-all duration-400 ${t.bg}`}>
-                        {/* Infographic Sparkline Decoration */}
-                        <svg className={`absolute bottom-0 left-0 w-full h-24 ${theme === 'default' ? 'opacity-[0.03]' : 'opacity-20'} pointer-events-none transform translate-y-4 group-hover:translate-y-0 transition-transform duration-700`} viewBox="0 0 100 40" preserveAspectRatio="none">
-                            <path d="M0,40 L0,30 L20,20 L40,25 L60,10 L80,15 L100,5 L100,40 Z" fill="currentColor" />
-                            <path d="M0,30 L20,20 L40,25 L60,10 L80,15 L100,5" fill="none" stroke="currentColor" strokeWidth="2" />
-                        </svg>
+                return tiers;
+            }, [filteredData]);
 
-                        {/* Abstract element for dark and success themes to give a premium glow */}
-                        {(theme === 'dark' || theme === 'success') && (
-                            <div className="absolute -right-6 -top-6 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700 pointer-events-none"></div>
-                        )}
-                        
-                        <div className="flex justify-between items-start mb-4 relative z-10">
-                            <p className={`text-[12px] font-bold uppercase tracking-widest font-display ${t.title}`}>{title}</p>
-                            <div className={`p-2.5 rounded-xl transition-transform duration-500 group-hover:scale-110 ${t.iconBg} ${t.iconGlow}`}>
-                                <Icon name={icon} size={20} />
+            if (!kpis) return (
+                <div className="flex h-screen items-center justify-center bg-meta-bg flex-col">
+                    <div className="w-10 h-10 border-4 border-gray-200 border-t-google-blue rounded-full animate-spin mb-4"></div>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen pb-20 font-sans text-gray-900 bg-meta-bg relative">
+                    <div className="absolute inset-0 bg-grid-pattern-dark opacity-[0.05] pointer-events-none"></div>
+                    
+                    {/* Clean Anchored Navbar (Google Style) */}
+                    <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50 relative">
+                        <div className="max-w-[1600px] mx-auto px-6 h-16 flex justify-between items-center">
+                            <div className="flex items-center space-x-4">
+                                <img src="https://drive.google.com/thumbnail?id=16K2KHrjf4Rl9ZY2OTaeS0YSZK9klqwH4&sz=w400" alt="Company Logo" className="h-8 object-contain blend-logo" />
+                                <div className="h-6 w-px bg-gray-200 mx-2 hidden sm:block"></div>
+                                <h1 className="text-xl font-semibold text-gray-800 tracking-tight hidden sm:block">Sales Performance</h1>
                             </div>
-                        </div>
-                        <div className="relative z-10">
-                            <h2 className={`text-4xl font-extrabold font-display tracking-tight tabular-nums pb-1 ${t.value}`}>
-                                {formattedValue}
-                            </h2>
-                        </div>
-                        {subtext && (
-                            <div className="mt-4 flex items-center relative z-10">
-                                <div className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border ${t.subtext}`}>
-                                    {subtext}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                );
-            };
-
-            const HallOfFameCard = ({ theme = 'dark', title, name, subtitle, icon, photo }) => {
-                const bgClass = theme === 'dark' ? 'bg-card-dark border-slate-700' : 'bg-card-primary border-primary-400';
-                const iconColor = theme === 'dark' ? 'text-emerald-400' : 'text-white';
-                const textClass = theme === 'dark' ? 'text-slate-300' : 'text-primary-100';
-                
-                return (
-                    <div className={`rounded-2xl p-7 border relative overflow-hidden flex flex-col justify-between h-full group hover:shadow-2xl hover:-translate-y-1 transition-all duration-400 ${bgClass}`}>
-                        {/* Infographic Giant Watermark */}
-                        <div className="absolute -right-4 -bottom-8 text-[140px] font-black opacity-[0.04] leading-none pointer-events-none text-white select-none transition-transform duration-700 group-hover:scale-110">#1</div>
-                        
-                        {/* Architectural Abstract Background Element */}
-                        <div className="absolute -right-6 -top-6 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
-                        <div className="absolute right-0 bottom-0 p-4 opacity-10 transform translate-x-4 translate-y-4 group-hover:-translate-x-2 group-hover:-translate-y-2 transition-transform duration-700">
-                            <Icon name={icon} size={140} className="text-white" />
-                        </div>
-
-                        <div className="relative z-10">
-                            <div className="flex items-center space-x-2 mb-8">
-                                <div className={`w-8 h-8 rounded-lg bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 ${theme === 'dark' ? 'shadow-glow-emerald' : 'shadow-glow-primary'}`}>
-                                    <Icon name="Star" size={16} className={iconColor} />
-                                </div>
-                                <span className={`text-[11px] font-bold uppercase tracking-widest font-display ${textClass}`}>{title}</span>
-                            </div>
-                            <div>
-                                {photo ? (
-                                    <div className="flex items-center space-x-5">
-                                        <div className="relative">
-                                            <div className={`absolute inset-0 rounded-full blur-md ${theme === 'dark' ? 'bg-emerald-400' : 'bg-white'} opacity-50 group-hover:opacity-100 transition-opacity duration-500`}></div>
-                                            <img 
-                                                src={photo} 
-                                                alt={name} 
-                                                className={`relative w-20 h-20 rounded-full object-cover border-[3px] ${theme === 'dark' ? 'border-slate-800' : 'border-primary-600'} shadow-xl shrink-0 z-10`} 
-                                                onError={(e) => { 
-                                                    e.target.onerror = null; 
-                                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'A')}&background=e2e8f0&color=475569&bold=true`; 
-                                                }} 
-                                            />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <h3 className="text-3xl font-extrabold font-display text-white tracking-tight truncate mb-1">{name || 'Calculating...'}</h3>
-                                            <div className={`inline-flex items-center px-2.5 py-1 rounded-md text-[12px] font-black uppercase tracking-widest bg-white/10 border border-white/10 ${textClass}`}>
-                                                {subtitle}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <h3 className="text-3xl font-extrabold font-display text-white tracking-tight mb-2 truncate">{name || 'Calculating...'}</h3>
-                                        <div className={`inline-flex items-center px-2.5 py-1 rounded-md text-[12px] font-black uppercase tracking-widest bg-white/10 border border-white/10 ${textClass}`}>
-                                            {subtitle}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                );
-            };
-
-            const ChartComponent = ({ type, data, options, height = "250px" }) => {
-                const canvasRef = useRef(null);
-                const chartInstance = useRef(null);
-
-                useEffect(() => {
-                    if (canvasRef.current) {
-                        if (chartInstance.current) chartInstance.current.destroy();
-                        const ctx = canvasRef.current.getContext('2d');
-                        Chart.defaults.font.family = "'Inter', sans-serif";
-                        Chart.defaults.color = '#94a3b8';
-                        chartInstance.current = new Chart(ctx, { type, data, options });
-                    }
-                    return () => { if (chartInstance.current) chartInstance.current.destroy(); };
-                }, [data, options, type]);
-
-                return <div style={{ height, position: 'relative', width: '100%' }}><canvas ref={canvasRef}></canvas></div>;
-            };
-
-            const App = () => {
-                const [rawData, setRawData] = useState([]);
-                const [lastSynced, setLastSynced] = useState(new Date());
-                const [isRefreshing, setIsRefreshing] = useState(false);
-                const [filters, setFilters] = useState({ month: 'All', manager: 'All', search: '' });
-                
-                const sourceUrl = 'https://docs.google.com/spreadsheets/d/1faXYMBSYEOlUNxmEMS6-LufCwHiOxk_sVKVvqVv3Q_o/gviz/tq?tqx=out:csv&sheet=Dashboard';
-
-                const fetchData = useCallback(async (isManual = false) => {
-                    if (isManual) setIsRefreshing(true);
-                    try {
-                        const response = await fetch(sourceUrl);
-                        if (!response.ok) throw new Error("Network error");
-                        const text = await response.text();
-                        const parsed = parseCSV(text);
-                        if (parsed.length > 0 && parsed[0]['Employee Name']) {
-                            setRawData(parsed);
-                            setLastSynced(new Date());
-                        } else throw new Error("Invalid format");
-                    } catch (error) {
-                        console.warn("Using fallback data", error);
-                        const fallbackCsv = "Employee Name,Manager Name,Target,Sales Achieved,Daily Run Rate,Expected Sales,Month\nSarah Connor,John Smith,1500000,1650000,55000,1700000,June\nKyle Reese,John Smith,1200000,950000,31000,1050000,June\nMarcus Wright,Jane Doe,1800000,1850000,61000,1900000,June\nDerek Reese,Jane Doe,1000000,400000,13000,500000,June";
-                        setRawData(parseCSV(fallbackCsv));
-                        setLastSynced(new Date());
-                    } finally {
-                        if (isManual) setTimeout(() => setIsRefreshing(false), 600);
-                    }
-                }, [sourceUrl]);
-
-                useEffect(() => {
-                    fetchData(true);
-                    const interval = setInterval(() => fetchData(), 15000);
-                    return () => clearInterval(interval);
-                }, [fetchData]);
-
-                const availableMonths = useMemo(() => [...new Set(rawData.map(d => d.Month).filter(Boolean))].sort(), [rawData]);
-                const availableManagers = useMemo(() => [...new Set(rawData.map(d => d['Manager Name']).filter(Boolean))].sort(), [rawData]);
-
-                const filteredData = useMemo(() => {
-                    const data = rawData.filter(row => {
-                        if (!row['Employee Name']) return false;
-                        const matchMonth = filters.month === 'All' || row.Month === filters.month;
-                        const matchManager = filters.manager === 'All' || row['Manager Name'] === filters.manager;
-                        const matchSearch = row['Employee Name']?.toLowerCase().includes(filters.search.toLowerCase()) || false;
-                        return matchMonth && matchManager && matchSearch;
-                    });
-                    return data.sort((a, b) => {
-                        const pctA = (Number(a['Sales Achieved']) || 0) / (Number(a.Target) || 1);
-                        const pctB = (Number(b['Sales Achieved']) || 0) / (Number(b.Target) || 1);
-                        return pctB - pctA;
-                    });
-                }, [rawData, filters]);
-
-                const kpis = useMemo(() => {
-                    if (!filteredData.length) return null;
-                    let totalTarget = 0, totalAchieved = 0;
-                    filteredData.forEach(row => { totalTarget += Number(row.Target) || 0; totalAchieved += Number(row['Sales Achieved']) || 0; });
-                    
-                    const achievementPercent = totalTarget > 0 ? (totalAchieved / totalTarget) * 100 : 0;
-                    const shortfall = Math.max(0, totalTarget - totalAchieved);
-                    const shortfallPercent = totalTarget > 0 ? (shortfall / totalTarget) * 100 : 0;
-                    
-                    let topEmp = null, topEmpPct = -1;
-                    filteredData.forEach(emp => {
-                        const pct = (Number(emp.Target) || 0) > 0 ? ((Number(emp['Sales Achieved']) || 0) / (Number(emp.Target) || 0)) * 100 : 0;
-                        if (pct > topEmpPct && (Number(emp.Target) || 0) > 0) { topEmpPct = pct; topEmp = emp; }
-                    });
-
-                    const mgrStats = {};
-                    filteredData.forEach(row => {
-                        const mgr = row['Manager Name'];
-                        if (!mgr) return;
-                        if (!mgrStats[mgr]) mgrStats[mgr] = { target: 0, achieved: 0 };
-                        mgrStats[mgr].target += Number(row.Target) || 0;
-                        mgrStats[mgr].achieved += Number(row['Sales Achieved']) || 0;
-                    });
-
-                    let topMgr = null, topMgrPct = -1;
-                    Object.keys(mgrStats).forEach(mgr => {
-                        const pct = mgrStats[mgr].target > 0 ? (mgrStats[mgr].achieved / mgrStats[mgr].target) * 100 : 0;
-                        if (pct > topMgrPct && mgrStats[mgr].target > 0) { topMgrPct = pct; topMgr = mgr; }
-                    });
-
-                    return { 
-                        totalTarget, 
-                        totalAchieved, 
-                        achievementPercent, 
-                        shortfall, 
-                        shortfallPercent, 
-                        topBDE: topEmp ? { name: topEmp['Employee Name'], pct: topEmpPct, photo: getProfilePic(topEmp['Employee Name'], topEmp) } : null, 
-                        topManager: topMgr ? { name: topMgr, pct: topMgrPct, photo: getProfilePic(topMgr, null) } : null 
-                    };
-                }, [filteredData]);
-
-                const doughnutData = useMemo(() => {
-                    if (!kpis) return {};
-                    return {
-                        labels: ['Achieved', 'Shortfall'],
-                        datasets: [{
-                            data: [kpis.totalAchieved, kpis.shortfall],
-                            backgroundColor: ['#10b981', '#f1f5f9'], 
-                            hoverBackgroundColor: ['#059669', '#e2e8f0'],
-                            borderWidth: 0, cutout: '82%', borderRadius: 20, hoverOffset: 4
-                        }]
-                    };
-                }, [kpis]);
-
-                const doughnutOptions = useMemo(() => ({
-                    responsive: true, maintainAspectRatio: false, 
-                    plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0f172a', padding: 12, cornerRadius: 8, bodyFont: {family: 'Inter'}, callbacks: { label: (ctx) => formatCurrency(ctx.raw) } } },
-                    animation: { animateScale: true, animateRotate: true }
-                }), []);
-
-                const managerChartData = useMemo(() => {
-                    const map = {};
-                    filteredData.forEach(row => {
-                        const mgr = row['Manager Name'];
-                        if (!mgr) return;
-                        if (!map[mgr]) map[mgr] = { name: mgr, target: 0, achieved: 0 };
-                        map[mgr].target += Number(row.Target) || 0;
-                        map[mgr].achieved += Number(row['Sales Achieved']) || 0;
-                    });
-                    const stats = Object.values(map);
-                    return {
-                        labels: stats.map(m => m.name.split(' ')[0]),
-                        datasets: [
-                            {
-                                label: 'Achieved', data: stats.map(m => m.achieved),
-                                backgroundColor: stats.map(m => m.achieved >= m.target ? '#10b981' : '#3b82f6'),
-                                borderRadius: 6, barPercentage: 0.5, categoryPercentage: 0.8, order: 1
-                            },
-                            {
-                                label: 'Target', data: stats.map(m => m.target),
-                                backgroundColor: '#f1f5f9', hoverBackgroundColor: '#e2e8f0',
-                                borderRadius: 6, barPercentage: 0.8, categoryPercentage: 0.8, order: 2
-                            }
-                        ]
-                    };
-                }, [filteredData]);
-
-                const barOptions = useMemo(() => ({
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0f172a', padding: 12, cornerRadius: 8, titleFont: { size: 13, family: 'Plus Jakarta Sans', weight: '700' }, bodyFont: { size: 12, family: 'Inter' }, callbacks: { label: (ctx) => `${ctx.dataset.label}: ${formatCurrency(ctx.raw)}` } } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { display: false, drawBorder: false }, border: { display: false }, ticks: { font: {size: 11, family: 'Inter', weight: '500'}, color: '#94a3b8', padding: 10, callback: v => '₹' + (v/100000).toFixed(0) + 'L' } },
-                        x: { grid: { display: false, drawBorder: false }, border: { display: false }, ticks: { font: {size: 12, family: 'Plus Jakarta Sans', weight: '600'}, color: '#475569', padding: 10 } }
-                    },
-                    interaction: { mode: 'index', intersect: false }
-                }), []);
-
-                /* NEW INFOGRAPHIC DATA MEMOS */
-                const teamHealth = useMemo(() => {
-                    if (!filteredData.length) return null;
-                    let met = 0, good = 0, avg = 0, risk = 0;
-                    filteredData.forEach(row => {
-                        const target = Number(row.Target) || 0;
-                        const achieved = Number(row['Sales Achieved']) || 0;
-                        const pct = target > 0 ? (achieved / target) * 100 : 0;
-                        if (pct >= 100) met++;
-                        else if (pct >= 71) good++;
-                        else if (pct >= 31) avg++;
-                        else risk++;
-                    });
-                    return {
-                        counts: { met, good, avg, risk },
-                        total: filteredData.length,
-                        chartData: {
-                            labels: ['Target Met', 'Good', 'Average', 'At Risk'],
-                            datasets: [{
-                                data: [met, good, avg, risk],
-                                backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
-                                borderWidth: 0, hoverOffset: 4, cutout: '82%', borderRadius: 10
-                            }]
-                        }
-                    };
-                }, [filteredData]);
-
-                const topPerformers = useMemo(() => {
-                    if (!filteredData.length) return [];
-                    
-                    // First, calculate the total target for each specific manager's team
-                    const teamTargets = {};
-                    filteredData.forEach(d => {
-                        const mgr = d['Manager Name'] || 'Unknown';
-                        if (!teamTargets[mgr]) teamTargets[mgr] = 0;
-                        teamTargets[mgr] += (Number(d.Target) || 0);
-                    });
-
-                    // Then, map the employees and include their manager's team target
-                    return [...filteredData]
-                        .map(d => ({ 
-                            name: d['Employee Name'], 
-                            manager: d['Manager Name'] || 'Unknown',
-                            revenue: Number(d['Sales Achieved']) || 0, 
-                            target: Number(d.Target) || 0, 
-                            teamTarget: teamTargets[d['Manager Name'] || 'Unknown'],
-                            photo: getProfilePic(d['Employee Name'], d) 
-                        }))
-                        .sort((a, b) => b.revenue - a.revenue)
-                        .slice(0, 5);
-                }, [filteredData]);
-
-                const maxTopPerformerRevenue = useMemo(() => {
-                    return topPerformers.length ? Math.max(...topPerformers.map(p => p.revenue)) : 1;
-                }, [topPerformers]);
-
-                const achieverTiers = useMemo(() => {
-                    if (!filteredData.length) return [];
-                    const achievers = [...filteredData]
-                        .map(d => ({ 
-                            name: d['Employee Name'], 
-                            revenue: Number(d['Sales Achieved']) || 0, 
-                            target: Number(d.Target) || 0, 
-                            photo: getProfilePic(d['Employee Name'], d),
-                            pct: (Number(d.Target) || 0) > 0 ? ((Number(d['Sales Achieved']) || 0) / (Number(d.Target) || 1)) * 100 : 0
-                        }))
-                        .filter(d => d.pct >= 100)
-                        .sort((a, b) => b.pct - a.pct);
-
-                    const getTierConfig = (type) => {
-                        if (type === 'legends') return {
-                            bgGlow1: 'bg-amber-500', bgGlow2: 'bg-orange-500',
-                            iconBox: 'from-amber-500/20 to-orange-500/20 border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.3)]',
-                            iconText: 'text-amber-400', pulse: 'bg-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.8)]',
-                            subtitle: 'text-orange-400', cardGlow: 'from-amber-500 to-orange-500',
-                            borderSpin: 'border-amber-500/40', avatarFallback: 'f59e0b',
-                            badgeBg: 'bg-amber-500/10 border-amber-500/20', badgeText: 'text-amber-400',
-                            textMain: 'text-amber-400', textSec: 'text-orange-400',
-                            barBase: 'bg-amber-500', barOver: 'bg-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.8)]'
-                        };
-                        if (type === 'masters') return {
-                            bgGlow1: 'bg-purple-500', bgGlow2: 'bg-fuchsia-500',
-                            iconBox: 'from-purple-500/20 to-fuchsia-500/20 border-purple-500/30 shadow-[0_0_30px_rgba(168,85,247,0.3)]',
-                            iconText: 'text-purple-400', pulse: 'bg-fuchsia-400 shadow-[0_0_10px_rgba(217,70,239,0.8)]',
-                            subtitle: 'text-fuchsia-400', cardGlow: 'from-purple-500 to-fuchsia-500',
-                            borderSpin: 'border-purple-500/40', avatarFallback: 'a855f7',
-                            badgeBg: 'bg-purple-500/10 border-purple-500/20', badgeText: 'text-purple-400',
-                            textMain: 'text-purple-400', textSec: 'text-fuchsia-400',
-                            barBase: 'bg-purple-500', barOver: 'bg-fuchsia-400 shadow-[0_0_10px_rgba(217,70,239,0.8)]'
-                        };
-                        return { // elites default
-                            bgGlow1: 'bg-emerald-500', bgGlow2: 'bg-cyan-500',
-                            iconBox: 'from-emerald-500/20 to-cyan-500/20 border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.3)]',
-                            iconText: 'text-emerald-400', pulse: 'bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]',
-                            subtitle: 'text-cyan-400', cardGlow: 'from-emerald-500 to-cyan-500',
-                            borderSpin: 'border-emerald-500/40', avatarFallback: '10b981',
-                            badgeBg: 'bg-emerald-500/10 border-emerald-500/20', badgeText: 'text-emerald-400',
-                            textMain: 'text-emerald-400', textSec: 'text-cyan-400',
-                            barBase: 'bg-emerald-500', barOver: 'bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]'
-                        };
-                    };
-
-                    const tiers = [];
-                    
-                    const legends = achievers.filter(a => a.pct >= 201);
-                    if (legends.length > 0) tiers.push({ id: 'legends', title: 'Exceptional Performance', subtitle: `${legends.length} Associates Achieved 201%+`, icon: 'Crown', tierName: 'Exceptional', config: getTierConfig('legends'), members: legends });
-
-                    const masters = achievers.filter(a => a.pct >= 150 && a.pct < 201);
-                    if (masters.length > 0) tiers.push({ id: 'masters', title: 'Outstanding Performance', subtitle: `${masters.length} Associates Achieved 150%+`, icon: 'Zap', tierName: 'Outstanding', config: getTierConfig('masters'), members: masters });
-
-                    const elites = achievers.filter(a => a.pct >= 100 && a.pct < 150);
-                    if (elites.length > 0) tiers.push({ id: 'elites', title: 'Elite Performance', subtitle: `${elites.length} Associates Achieved 100%+`, icon: 'Target', tierName: 'Elite', config: getTierConfig('elites'), members: elites });
-
-                    return tiers;
-                }, [filteredData]);
-
-                const teamMVPs = useMemo(() => {
-                    if (!filteredData.length) return [];
-                    const mgrMap = {};
-                    // Find the top performer for EACH manager
-                    filteredData.forEach(d => {
-                        const mgr = d['Manager Name'];
-                        if (!mgr) return;
-                        const rev = Number(d['Sales Achieved']) || 0;
-                        
-                        // CRITICAL FIX: Ignore anyone with 0 or negative revenue for MVP status
-                        if (rev <= 0) return;
-
-                        if (!mgrMap[mgr] || rev > mgrMap[mgr].revenue) {
-                            mgrMap[mgr] = {
-                                name: d['Employee Name'],
-                                manager: mgr,
-                                revenue: rev,
-                                target: Number(d.Target) || 0,
-                                runRate: Number(d['Daily Run Rate']) || 0,
-                                photo: getProfilePic(d['Employee Name'], d),
-                                teamTarget: 0 
-                            };
-                        }
-                    });
-                    
-                    // Calculate the total target for each manager's team
-                    filteredData.forEach(d => {
-                        const mgr = d['Manager Name'];
-                        if (mgr && mgrMap[mgr]) {
-                            mgrMap[mgr].teamTarget += (Number(d.Target) || 0);
-                        }
-                    });
-
-                    // Return as an array sorted by highest revenue
-                    return Object.values(mgrMap).sort((a, b) => b.revenue - a.revenue);
-                }, [filteredData]);
-
-                const teamHealthOptions = useMemo(() => ({
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0f172a', padding: 12, cornerRadius: 8, bodyFont: {family: 'Inter'} } },
-                    animation: { animateScale: true, animateRotate: true }
-                }), []);
-
-                if (!kpis) return (
-                    <div className="flex h-screen items-center justify-center bg-slate-50 flex-col">
-                        <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mb-4"></div>
-                        <p className="text-sm text-slate-500 font-bold font-display uppercase tracking-widest">Syncing Ledger</p>
-                    </div>
-                );
-
-                return (
-                    <div className="min-h-screen pb-20 font-sans text-slate-800">
-                        
-                        {/* Floating Nav Bar (Ultra-Modern Trend) */}
-                        <div className="pt-6 px-6 max-w-[1600px] mx-auto z-50 relative animate-slide-up">
-                            <div className="bg-white/80 backdrop-blur-2xl border border-white/60 shadow-glass rounded-2xl px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                                
-                                <div className="flex items-center space-x-4">
-                                    {/* Text-based Logo for OnePaper */}
-                                    <div className="flex items-center justify-center px-3 py-1.5 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-md border border-slate-700/50 hover:scale-105 transition-transform duration-300">
-                                        <span className="text-xl font-black font-display tracking-tighter text-white">
-                                            One<span className="text-primary-400">Paper</span>
-                                        </span>
-                                    </div>
-                                    <div className="hidden sm:block h-8 w-px bg-slate-200"></div>
-                                    <div>
-                                        <h1 className="text-xl font-extrabold font-display tracking-tight text-slate-900">Sales Dashboard</h1>
-                                        <div className="flex items-center space-x-2 mt-0.5">
-                                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-glow-emerald"></div>
-                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Live Feed Active</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center space-x-3 bg-slate-50/50 p-1.5 rounded-xl border border-slate-100">
-                                    <button onClick={() => setFilters({...filters, month: 'All'})} className={`px-4 py-2 text-[12px] font-bold uppercase tracking-wider rounded-lg transition-all ${filters.month === 'All' ? 'bg-white shadow-sm text-primary-600 border border-slate-200/50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'}`}>
-                                        All Time
+                            <div className="flex items-center space-x-2">
+                                {userRole === 'admin' && (
+                                    <button onClick={onOpenAdmin} className="px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-100 transition-colors flex items-center">
+                                        <Icon name="Settings" size={16} className="mr-1.5" /> Admin Console
                                     </button>
-                                    {availableMonths.map(m => (
-                                        <button key={m} onClick={() => setFilters({...filters, month: m})} className={`px-4 py-2 text-[12px] font-bold uppercase tracking-wider rounded-lg transition-all ${filters.month === m ? 'bg-white shadow-sm text-primary-600 border border-slate-200/50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'}`}>
-                                            {m}
-                                        </button>
-                                    ))}
-                                </div>
+                                )}
+                                <select className="bg-gray-50 border border-gray-200 rounded-md py-1.5 px-3 text-sm font-medium text-gray-700 outline-none focus:border-google-blue focus:ring-1 focus:ring-google-blue transition-all cursor-pointer" value={filters.month} onChange={(e) => setFilters({...filters, month: e.target.value})}>
+                                    <option value="All">All Time</option>
+                                    {availableMonths.map(m => <option key={m} value={m}>{m}</option>)}
+                                </select>
+                                <div className="w-px h-5 bg-gray-200 mx-1"></div>
+                                <button onClick={onLogout} className="px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors flex items-center">Logout</button>
                             </div>
                         </div>
+                    </header>
 
-                        {/* Main Content Dashboard */}
-                        <div className="max-w-[1600px] mx-auto px-6 mt-8 space-y-8">
-                            
-                            {/* ROW 1: Financial KPIs & Hall of Fame Grid */}
-                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 animate-slide-up" style={{ animationDelay: '100ms' }}>
-                                <div className="xl:col-span-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <KPICard title="Total Target" value={kpis.totalTarget} format="currency" icon="Target" theme="dark" />
-                                    <KPICard title="Revenue Achieved" value={kpis.totalAchieved} format="currency" icon="CheckCircle" theme="success" subtext={`${formatPercent(kpis.achievementPercent)} Achieved`} />
-                                    <KPICard title="Shortfall Gap" value={kpis.shortfall} format="currency" icon="AlertTriangle" theme={kpis.shortfall > 0 ? "danger" : "default"} subtext={`${formatPercent(kpis.shortfallPercent)} Remaining`} />
-                                </div>
-                                
-                                <div className="xl:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    <HallOfFameCard theme="dark" title="Top Manager" name={kpis.topManager?.name} subtitle={`${formatPercent(kpis.topManager?.pct)} Target Hit`} icon="Award" photo={kpis.topManager?.photo} />
-                                    <HallOfFameCard theme="primary" title="Top BDE Performer" name={kpis.topBDE?.name} subtitle={`${formatPercent(kpis.topBDE?.pct)} Target Hit`} icon="TrendingUp" photo={kpis.topBDE?.photo} />
-                                </div>
-                            </div>
+                    <div className="max-w-[1600px] mx-auto px-6 mt-8 space-y-8 animate-fade-in relative z-10">
+                        
+                        {/* ROW 1: Infographic KPIs */}
+                        <TopCardsRow kpis={kpis} />
 
-                            {/* ROW 2: Analytical Charts */}
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-slide-up" style={{ animationDelay: '200ms' }}>
-                                <Card title="Target Achievement" className="lg:col-span-1" bodyClass="p-6 pt-2">
-                                    <div className="relative h-[240px] flex items-center justify-center group">
-                                        <ChartComponent type="doughnut" data={doughnutData} options={doughnutOptions} height="100%" />
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transform transition-transform duration-500 group-hover:scale-110">
-                                            <span className="text-4xl font-black font-display tracking-tight text-slate-800">{formatPercent(kpis.achievementPercent)}</span>
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Realized</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-center space-x-8 mt-6 pt-6 border-t border-slate-100/60">
-                                        <div className="text-center">
-                                            <div className="flex items-center justify-center text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500 mr-2 shadow-glow-emerald"></div>Achieved</div>
-                                            <div className="text-[14px] font-extrabold text-slate-800 tabular-nums">{formatCurrency(kpis.totalAchieved)}</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="flex items-center justify-center text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5"><div className="w-2 h-2 rounded-full bg-slate-200 mr-2"></div>Shortfall</div>
-                                            <div className="text-[14px] font-extrabold text-slate-800 tabular-nums">{formatCurrency(kpis.shortfall)}</div>
-                                        </div>
-                                    </div>
-                                </Card>
+                        {/* ROW 1.5: Team Overview & Top Contributors */}
+                        <TeamOverviewRow stats={performanceStats} contributors={topContributors} kpis={kpis} />
 
-                                <Card title="Manager Performance" className="lg:col-span-2" bodyClass="p-6 pt-2"
-                                    action={
-                                        <div className="flex space-x-5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                                            <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-sm bg-primary-500 mr-2"></span>Achieved</div>
-                                            <div className="flex items-center"><span className="w-2.5 h-2.5 rounded-sm bg-slate-200 mr-2"></span>Target</div>
-                                        </div>
-                                    }>
-                                    <div className="mt-4">
-                                        <ChartComponent type="bar" data={managerChartData} options={barOptions} height="280px" />
-                                    </div>
-                                </Card>
-                            </div>
+                        {/* ROW 2: Team MVPs (Dark slate & Yellow) */}
+                        {teamMVPs.length > 0 && (
+                            <div className="space-y-4 pt-2 animate-slide-up delay-200">
+                                <h3 className="text-sm font-bold text-gray-900 tracking-tight flex items-center">Team MVPs Spotlight</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {teamMVPs.map((mvp, idx) => {
+                                        const overachieved = Math.max(0, mvp.revenue - mvp.target);
+                                        const firstName = mvp.manager.split(' ')[0];
+                                        const realization = formatNumber((mvp.revenue / (mvp.target || 1)) * 100);
+                                        const cont = formatNumber((mvp.revenue / (mvp.teamTarget || 1)) * 100);
 
-                            {/* ROW 2.5: NEW INFOGRAPHICS */}
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-slide-up" style={{ animationDelay: '250ms' }}>
-                                {/* Team Health Doughnut */}
-                                <Card title="Team Performance Overview" className="lg:col-span-1" bodyClass="p-6 pt-2">
-                                    <div className="relative h-[200px] flex items-center justify-center group mt-2">
-                                        {teamHealth && <ChartComponent type="doughnut" data={teamHealth.chartData} options={teamHealthOptions} height="100%" />}
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transform transition-transform duration-500 group-hover:scale-110">
-                                            <span className="text-4xl font-black font-display tracking-tight text-slate-800 drop-shadow-sm">{teamHealth?.total || 0}</span>
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 bg-white/80 px-2 py-0.5 rounded-md backdrop-blur-sm border border-slate-100">Total BDEs</span>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-y-3 gap-x-4 mt-6 pt-5 border-t border-slate-100/60">
-                                        <div className="flex items-center"><div className="w-2 h-2 rounded-full bg-emerald-500 mr-2.5 shadow-glow-emerald"></div><span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex-1">Target Met</span><span className="text-[12px] font-black text-slate-800">{teamHealth?.counts.met || 0}</span></div>
-                                        <div className="flex items-center"><div className="w-2 h-2 rounded-full bg-primary-500 mr-2.5 shadow-glow-primary"></div><span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex-1">Good</span><span className="text-[12px] font-black text-slate-800">{teamHealth?.counts.good || 0}</span></div>
-                                        <div className="flex items-center"><div className="w-2 h-2 rounded-full bg-amber-500 mr-2.5"></div><span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex-1">Average</span><span className="text-[12px] font-black text-slate-800">{teamHealth?.counts.avg || 0}</span></div>
-                                        <div className="flex items-center"><div className="w-2 h-2 rounded-full bg-red-500 mr-2.5"></div><span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex-1">At Risk</span><span className="text-[12px] font-black text-slate-800">{teamHealth?.counts.risk || 0}</span></div>
-                                    </div>
-                                </Card>
-
-                                {/* Top 5 Leaderboard */}
-                                <Card title="Top Sales Contributors" className="lg:col-span-2" bodyClass="p-6 pt-2">
-                                    <div className="flex flex-col justify-center h-full space-y-6 mt-1">
-                                        {topPerformers.map((emp, i) => {
-                                            const rankColors = ['text-amber-400', 'text-slate-400', 'text-amber-700', 'text-slate-300', 'text-slate-300'];
-                                            const rankBg = ['bg-gradient-to-r from-amber-50 to-transparent border-amber-200/50', 'bg-gradient-to-r from-slate-50 to-transparent border-slate-200/50', 'bg-gradient-to-r from-orange-50 to-transparent border-orange-200/50', 'bg-transparent border-transparent', 'bg-transparent border-transparent'];
-                                            
-                                            const contributionPct = emp.teamTarget > 0 ? (emp.revenue / emp.teamTarget) * 100 : 0;
-                                            const orgContributionPct = kpis.totalTarget > 0 ? (emp.revenue / kpis.totalTarget) * 100 : 0;
-                                            const mgrFirstName = emp.manager !== 'Unknown' ? emp.manager.split(' ')[0] : 'Team';
-
-                                            return (
-                                            <div key={i} className={`relative group p-2.5 rounded-xl border transition-colors ${rankBg[i]}`}>
-                                                <div className="flex justify-between items-center mb-3">
-                                                    <div className="flex items-center">
-                                                        <span className={`text-[18px] font-black w-8 mr-1 ${rankColors[i]}`}>#{i+1}</span>
-                                                        {emp.photo && (
-                                                            <img 
-                                                                src={emp.photo} 
-                                                                alt={emp.name} 
-                                                                className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-md mr-3" 
-                                                                onError={(e) => { 
-                                                                    e.target.onerror = null; 
-                                                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name || 'A')}&background=e2e8f0&color=475569&bold=true`; 
-                                                                }} 
-                                                            />
-                                                        )}
-                                                        <span className="text-[14px] font-bold text-slate-800 font-display">{emp.name}</span>
+                                        return (
+                                            <div key={idx} className="hover-card-lift-dark bg-gradient-to-b from-[#1a1f2c] to-[#0f172a] border border-gray-800/80 rounded-2xl p-6 relative overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.12)] h-full flex flex-col">
+                                                <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl pointer-events-none"></div>
+                                                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz48L3N2Zz4=')] opacity-50 pointer-events-none"></div>
+                                                
+                                                <div className="flex items-center space-x-4 mb-6 z-10 relative">
+                                                    <div className="relative shrink-0">
+                                                        <img src={mvp.photo} alt={mvp.name} className="w-14 h-14 rounded-full object-cover border-2 border-yellow-500 shadow-glow-yellow relative z-10" />
                                                     </div>
-                                                    <div className="text-right flex flex-col items-end">
-                                                        <div>
-                                                            <span className="text-[14px] font-black text-slate-800 tabular-nums">{formatCurrency(emp.revenue)}</span>
-                                                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-2 hidden sm:inline-block">/ {formatCurrency(emp.target)}</span>
-                                                        </div>
-                                                        <div className="flex flex-col items-end gap-1 mt-1.5">
-                                                            <div className="inline-flex items-center px-2 py-0.5 rounded bg-slate-800 text-slate-200 border border-slate-700 text-[8.5px] font-bold uppercase tracking-widest shadow-sm group-hover:bg-slate-900 group-hover:text-white transition-colors duration-300" title={`Contributed ${formatCurrency(emp.revenue)} towards the ${formatCurrency(kpis.totalTarget)} overall combined target`}>
-                                                                {formatNumber(orgContributionPct)}% of Overall Target
-                                                            </div>
-                                                        </div>
+                                                    <div className="min-w-0">
+                                                        <div className="inline-flex px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest text-yellow-500 border border-yellow-500/30 mb-1.5 bg-yellow-500/10 backdrop-blur-sm">{firstName}'S TEAM MVP</div>
+                                                        <h3 className="text-xl font-bold text-white tracking-tight truncate drop-shadow-sm">{mvp.name}</h3>
                                                     </div>
                                                 </div>
-                                                <div className="w-full bg-slate-200/60 h-2.5 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-gradient-to-r from-primary-600 to-primary-400 rounded-full group-hover:from-emerald-500 group-hover:to-emerald-400 transition-colors duration-500 relative" style={{ width: `${(emp.revenue / maxTopPerformerRevenue) * 100}%` }}>
-                                                        {/* Striped texture for infographic feel */}
-                                                        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(45deg, rgba(255,255,255,0.4) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.4) 75%, transparent 75%, transparent)', backgroundSize: '10px 10px' }}></div>
+                                                <div className="grid grid-cols-2 gap-y-6 gap-x-4 flex-grow z-10 relative">
+                                                    <div className="flex flex-col"><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center"><Icon name="TrendingUp" size={12} className="mr-1 text-teal-400"/> Achieved</span><span className="text-lg font-bold text-yellow-500 tabular-nums drop-shadow-sm">{formatCurrency(mvp.revenue)}</span></div>
+                                                    <div className="flex flex-col"><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center"><Icon name="Target" size={12} className="mr-1 text-emerald-400"/> Target</span><span className="text-lg font-bold text-white tabular-nums drop-shadow-sm">{formatCurrency(mvp.target)}</span></div>
+                                                    <div className="flex flex-col"><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center"><Icon name="Activity" size={12} className="mr-1 text-gray-500"/> Run Rate</span><span className="text-sm font-semibold text-teal-400 tabular-nums">{formatCurrency(mvp.runRate)}</span></div>
+                                                    <div className="flex flex-col"><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center"><Icon name="Award" size={12} className="mr-1 text-blue-400"/> Overachieved</span><span className="text-sm font-semibold text-blue-400 tabular-nums">{overachieved > 0 ? '+' + formatCurrency(overachieved) : '-'}</span></div>
+                                                    
+                                                    <div className="col-span-2 mt-auto pt-2">
+                                                        <div className="flex justify-between items-end text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2"><span>Target Realization</span><span className="text-xs font-bold text-yellow-500">{realization}%</span></div>
+                                                        <div className="w-full h-1.5 bg-gray-800/80 rounded-full overflow-hidden border border-gray-700/50"><div className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 rounded-full shadow-glow-yellow animate-grow-width" style={{ width: `${Math.min((mvp.revenue / (mvp.target || 1)) * 100, 100)}%` }}></div></div>
+                                                        <div className="mt-4 inline-block px-2.5 py-1.5 text-[9px] font-bold text-yellow-500 border border-yellow-500/20 rounded uppercase tracking-wider bg-yellow-500/5 backdrop-blur-sm">Contributed {cont}% of {firstName}'s team target</div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        )})}
-                                    </div>
-                                </Card>
+                                        );
+                                    })}
+                                </div>
                             </div>
+                        )}
 
-                            {/* ROW 2.6: TEAM MVPS SPOTLIGHT (NEW INFOGRAPHIC) */}
-                            {teamMVPs.length > 0 && (
-                                <div className="animate-slide-up space-y-5 mt-8" style={{ animationDelay: '260ms' }}>
-                                    <div className="flex items-center space-x-3 px-2">
-                                        <div className="p-2 bg-amber-100 text-amber-600 rounded-lg">
-                                            <Icon name="Crown" size={20} />
-                                        </div>
-                                        <h3 className="text-xl font-extrabold font-display text-slate-800 tracking-tight">Team MVPs Spotlight</h3>
+                        {/* ROW 3: High Achievers Clubs (Dark Neon) */}
+                        {achieverTiers.map((tier) => (
+                            <div key={tier.id} className={`${tier.config.containerBg} rounded-xl p-6 relative overflow-hidden bg-grid-pattern shadow-sm animate-slide-up delay-300`}>
+                                <div className="flex items-center space-x-3 mb-6 relative z-10">
+                                    <div className={`w-10 h-10 rounded bg-${tier.config.accent}-500/10 flex items-center justify-center border border-${tier.config.accent}-500/20`}>
+                                        <Icon name={tier.icon} size={20} className={`text-${tier.config.accent}-400`} />
                                     </div>
-                                    <div className={`grid gap-6 ${
-                                        teamMVPs.length === 1 ? 'grid-cols-1 max-w-3xl mx-auto' : 
-                                        teamMVPs.length === 2 ? 'grid-cols-1 lg:grid-cols-2' : 
-                                        'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'
-                                    }`}>
-                                        {teamMVPs.map((mvp, idx) => {
-                                            const overachieved = Math.max(0, mvp.revenue - mvp.target);
-                                            const firstName = mvp.manager.split(' ')[0];
-                                            
-                                            return (
-                                                <div key={idx} className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.08)] p-6 relative overflow-hidden flex flex-col group hover:-translate-y-1 transition-transform duration-300">
-                                                    {/* Architectural Infographic Background Decor */}
-                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500 opacity-[0.05] rounded-full blur-3xl pointer-events-none group-hover:opacity-15 transition-opacity duration-700"></div>
-                                                    <Icon name="Crown" size={100} className="absolute -right-8 -bottom-8 text-amber-500 opacity-5 transform -rotate-12 pointer-events-none" />
-                                                    
-                                                    {/* Header: Photo & Name */}
-                                                    <div className="relative z-10 flex items-center space-x-4 mb-6 border-b border-slate-700/50 pb-5">
-                                                        <div className="relative shrink-0">
-                                                            <div className="absolute inset-0 bg-amber-400 rounded-full blur-md opacity-30 animate-pulse"></div>
-                                                            <img 
-                                                                src={mvp.photo} 
-                                                                alt={mvp.name} 
-                                                                className="relative w-20 h-20 rounded-full object-cover border-[3px] border-amber-400 shadow-xl z-10" 
-                                                                onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(mvp.name || 'A')}&background=f59e0b&color=fff&bold=true`; }} 
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <div className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[9px] font-black uppercase tracking-widest mb-1.5 shadow-sm">
-                                                                {firstName}'s Team MVP
-                                                            </div>
-                                                            <h3 className="text-2xl font-black font-display text-white tracking-tight leading-none">{mvp.name}</h3>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Stats Grid */}
-                                                    <div className="relative z-10 grid grid-cols-2 gap-y-5 gap-x-4">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center"><Icon name="TrendingUp" size={12} className="mr-1 text-amber-500"/> Achieved</span>
-                                                            <span className="text-xl font-black text-amber-400 tabular-nums">{formatCurrency(mvp.revenue)}</span>
-                                                        </div>
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center"><Icon name="Target" size={12} className="mr-1"/> Target</span>
-                                                            <span className="text-xl font-black text-white tabular-nums">{formatCurrency(mvp.target)}</span>
-                                                        </div>
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center"><Icon name="Activity" size={12} className="mr-1"/> Run Rate</span>
-                                                            <span className="text-lg font-black text-emerald-400 tabular-nums">{formatCurrency(mvp.runRate)}</span>
-                                                        </div>
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center"><Icon name="Award" size={12} className="mr-1"/> Overachieved</span>
-                                                            <span className="text-lg font-black text-primary-400 tabular-nums">{overachieved > 0 ? '+' + formatCurrency(overachieved) : '-'}</span>
-                                                        </div>
-                                                        
-                                                        {/* Progress bar across the bottom */}
-                                                        <div className="col-span-2 mt-1">
-                                                            <div className="flex justify-between items-end text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">
-                                                                <span>Target Realization</span>
-                                                                <span className="text-[14px] font-black text-amber-400">{formatPercent((mvp.revenue / (mvp.target || 1)) * 100)}</span>
-                                                            </div>
-                                                            <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700 shadow-inner">
-                                                                <div className="h-full bg-gradient-to-r from-amber-600 to-amber-400 rounded-full relative shadow-[0_0_10px_rgba(245,158,11,0.5)]" style={{ width: `${Math.min((mvp.revenue / (mvp.target || 1)) * 100, 100)}%` }}>
-                                                                    <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(45deg, rgba(255,255,255,0.4) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.4) 75%, transparent 75%, transparent)', backgroundSize: '10px 10px' }}></div>
-                                                                </div>
-                                                            </div>
-                                                            <div className="mt-2.5 inline-flex items-center px-2 py-1 rounded bg-slate-800/80 text-amber-400/90 border border-slate-700 text-[9px] font-bold uppercase tracking-widest">
-                                                                Contributed {formatPercent((mvp.revenue / (mvp.teamTarget || 1)) * 100)} of {firstName}'s Team Target
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                                    <div>
+                                        <h3 className={`text-lg font-bold tracking-tight ${tier.config.title}`}>{tier.title}</h3>
+                                        <div className="flex items-center mt-1 text-[10px] font-bold uppercase tracking-widest">
+                                            <div className={`w-1.5 h-1.5 rounded-full bg-${tier.config.accent}-400 mr-2`}></div>
+                                            <span className={tier.config.sub}>{tier.subtitle}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            )}
 
-                            {}
-                            {/* ROW 2.75: THE HIGH ACHIEVER TIERS (NEW INFOGRAPHIC) */}
-                            {achieverTiers.length > 0 && (
-                                <div className="flex flex-col space-y-8 animate-slide-up mt-8" style={{ animationDelay: '275ms' }}>
-                                    {achieverTiers.map((tier, tierIdx) => (
-                                        <div key={tier.id} className="bg-[#0b1121] rounded-3xl border border-slate-800 shadow-float p-7 relative overflow-hidden">
-                                            {/* Architectural Infographic Background Decor */}
-                                            <div className={`absolute top-0 right-0 w-96 h-96 opacity-10 rounded-full blur-[100px] pointer-events-none ${tier.config.bgGlow1}`}></div>
-                                            <div className={`absolute bottom-0 left-0 w-64 h-64 opacity-10 rounded-full blur-[80px] pointer-events-none ${tier.config.bgGlow2}`}></div>
-                                            <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
-                                            
-                                            <div className="flex flex-wrap gap-4 items-center justify-between mb-8 relative z-10">
-                                                <div className="flex items-center space-x-5">
-                                                    <div className={`w-14 h-14 rounded-2xl backdrop-blur-md flex items-center justify-center border group-hover:scale-110 transition-transform ${tier.config.iconBox}`}>
-                                                        <Icon name={tier.icon} size={28} className={`${tier.config.iconText} drop-shadow-md`} />
+                                <div className="flex flex-wrap gap-4 relative z-10">
+                                    {tier.members.map((emp, i) => {
+                                        const overachieved = Math.max(0, emp.revenue - emp.target);
+                                        const maxVal = Math.max(emp.target, emp.revenue) || 1;
+                                        const targetBarPct = (emp.target / maxVal) * 100;
+                                        const strokeColor = tier.config.accent === 'emerald' ? '#34d399' : tier.config.accent === 'purple' ? '#c084fc' : '#fbbf24';
+
+                                        return (
+                                        <div key={i} className={`hover-card-lift-dark w-[280px] ${tier.config.cardBg} border ${tier.config.border} rounded-xl p-4 flex flex-col relative`}>
+                                            <div className="flex items-start justify-between mb-4">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="relative">
+                                                        <img src={emp.photo} alt={emp.name} className="w-12 h-12 rounded-full object-cover border border-gray-600" />
+                                                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-${tier.config.accent}-500 flex items-center justify-center border-2 border-[#1e293b]`}><Icon name="Award" size={8} className="text-white"/></div>
                                                     </div>
                                                     <div>
-                                                        <h3 className="text-2xl font-black font-display text-white tracking-tight">{tier.title}</h3>
-                                                        <div className="flex items-center mt-1.5">
-                                                            <div className={`w-2 h-2 rounded-full animate-pulse mr-2 ${tier.config.pulse}`}></div>
-                                                            <p className={`text-[12px] font-bold uppercase tracking-widest ${tier.config.subtitle}`}>{tier.subtitle}</p>
+                                                        <h4 className="text-sm font-bold text-white tracking-tight">{emp.name}</h4>
+                                                        {/* Animated Metallic Sales Badge */}
+                                                        <div className={`mt-1.5 ${tier.config.pillBg}`}>
+                                                            {tier.tierName}
+                                                            <div className="badge-glare"></div>
                                                         </div>
                                                     </div>
                                                 </div>
+                                                
+                                                <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                                                    <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="3" />
+                                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={strokeColor} strokeWidth="3" strokeDasharray={`${Math.min(emp.pct, 100)}, 100`} />
+                                                    </svg>
+                                                    <span className="text-[9px] font-bold tracking-tighter text-white">{formatNumber(emp.pct)}%</span>
+                                                </div>
                                             </div>
 
-                                            {/* Scrollable VIP Cards */}
-                                            <div className="flex overflow-x-auto gap-6 pb-4 pt-2 px-2 relative z-10" style={{ scrollbarWidth: 'thin', scrollbarColor: `${tier.id === 'elites' ? '#10b981' : tier.id === 'masters' ? '#a855f7' : '#f59e0b'} transparent` }}>
-                                                {tier.members.map((emp, i) => {
-                                                    const overachieved = Math.max(0, emp.revenue - emp.target);
-                                                    const maxVal = Math.max(emp.target, emp.revenue) || 1;
-                                                    const targetBarPct = (emp.target / maxVal) * 100;
+                                            <div className="flex justify-between items-end mb-2">
+                                                <div className="flex flex-col"><span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-0.5 flex items-center"><Icon name="Target" size={10} className="mr-1"/> Target</span><span className="text-xs font-semibold text-gray-300">{formatCurrency(emp.target)}</span></div>
+                                                <div className="flex flex-col items-end"><span className={`text-[8px] font-bold uppercase tracking-widest mb-0.5 flex items-center ${tier.config.sub}`}><Icon name="TrendingUp" size={10} className="mr-1"/> Achieved</span><span className={`text-sm font-bold ${tier.config.sub}`}>{formatCurrency(emp.revenue)}</span></div>
+                                            </div>
 
-                                                    return (
-                                                    <div key={i} className="flex-shrink-0 relative group w-[340px]">
-                                                        {/* Glow Behind Card */}
-                                                        <div className={`absolute -inset-0.5 bg-gradient-to-r ${tier.config.cardGlow} rounded-2xl blur opacity-20 group-hover:opacity-60 transition duration-500`}></div>
-                                                        
-                                                        {/* Infographic Card Body */}
-                                                        <div className="relative h-full bg-[#0d1326] border border-slate-700/60 rounded-2xl flex flex-col overflow-hidden hover:border-slate-600 transition-colors shadow-xl">
-                                                            
-                                                            {/* Top Glowing Accent Line */}
-                                                            <div className={`h-1.5 w-full bg-gradient-to-r ${tier.config.cardGlow}`}></div>
-                                                            
-                                                            {/* Tech Background Grid (Infographic touch) */}
-                                                            <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-                                                            
-                                                            <div className="p-6 relative z-10 flex-1 flex flex-col">
-                                                                <div className="flex items-start justify-between mb-6">
-                                                                    <div className="flex items-center space-x-4">
-                                                                        <div className="relative shrink-0">
-                                                                            {/* Complex Radar Border */}
-                                                                            <div className={`absolute -inset-2 border border-dashed rounded-full animate-[spin_8s_linear_infinite] ${tier.config.borderSpin}`}></div>
-                                                                            <div className={`absolute -inset-2 border border-dotted rounded-full animate-[spin_12s_linear_infinite_reverse] ${tier.config.borderSpin} opacity-50`}></div>
-                                                                            <img 
-                                                                                src={emp.photo} 
-                                                                                alt={emp.name} 
-                                                                                className="relative w-14 h-14 rounded-full object-cover border-2 border-[#0d1326] z-10 shadow-lg" 
-                                                                                onError={(e) => { 
-                                                                                    e.target.onerror = null; 
-                                                                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name || 'A')}&background=${tier.config.avatarFallback}&color=fff&bold=true`; 
-                                                                                }} 
-                                                                            />
-                                                                            <div className={`absolute -bottom-2 -right-2 text-slate-900 rounded-full p-1 z-20 ${tier.config.barBase} shadow-md`}>
-                                                                                <Icon name={tier.icon} size={12} />
-                                                                            </div>
-                                                                        </div>
-                                                                        <div>
-                                                                            <h4 className="text-[18px] font-black text-white font-display tracking-tight truncate max-w-[140px]">{emp.name}</h4>
-                                                                            <div className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded inline-block mt-1 border ${tier.config.badgeBg} ${tier.config.badgeText} shadow-sm`}>
-                                                                                {tier.tierName}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
+                                            <div className="relative w-full h-1.5 bg-gray-800 rounded-full overflow-hidden mb-4">
+                                                <div className={`absolute top-0 left-0 h-full bg-${tier.config.accent}-500 animate-grow-width`} style={{ width: `${Math.min(targetBarPct, 100)}%` }}></div>
+                                                {emp.revenue > emp.target && <div className={`absolute top-0 h-full bg-${tier.config.accent}-400 opacity-60 animate-grow-width`} style={{ left: `${targetBarPct}%`, width: `${100 - targetBarPct}%` }}></div>}
+                                                <div className="absolute top-0 bottom-0 border-r-2 border-white z-20" style={{ left: `${targetBarPct}%` }}></div>
+                                            </div>
 
-                                                                    {/* Circular Infographic Gauge */}
-                                                                    <div className="relative w-14 h-14 flex items-center justify-center shrink-0">
-                                                                        <div className="absolute inset-0 bg-slate-900/50 rounded-full shadow-inner border border-slate-700/50"></div>
-                                                                        <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                                                                            {/* Background Ring */}
-                                                                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#1e293b" strokeWidth="3" />
-                                                                            {/* 100% Ring */}
-                                                                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={`${Math.min(emp.pct, 100)}, 100`} className={tier.config.textMain} />
-                                                                            {/* Overachieved Ring Layer */}
-                                                                            {emp.pct > 100 && (
-                                                                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={`${Math.min(emp.pct - 100, 100)}, 100`} className={`${tier.config.textSec} opacity-80`} />
-                                                                            )}
-                                                                        </svg>
-                                                                        <span className="text-[11px] font-black text-white tabular-nums z-10">{Math.floor(emp.pct)}%</span>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Infographic Data Architecture */}
-                                                                <div className="flex-1 flex flex-col justify-end">
-                                                                    <div className="flex justify-between items-end mb-2">
-                                                                        <div className="flex flex-col">
-                                                                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center mb-0.5"><Icon name="Target" size={10} className="mr-1"/> Target</span>
-                                                                            <span className="text-[13px] font-bold text-slate-300 tabular-nums">{formatCurrency(emp.target)}</span>
-                                                                        </div>
-                                                                        <div className="flex flex-col items-end">
-                                                                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center mb-0.5"><Icon name="TrendingUp" size={10} className={`mr-1 ${tier.config.textMain}`}/> Achieved</span>
-                                                                            <span className={`text-[16px] font-black tabular-nums ${tier.config.textMain}`}>{formatCurrency(emp.revenue)}</span>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {/* Physical Goal Line Bar Graph */}
-                                                                    <div className="relative w-full h-3.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700 shadow-inner mt-1">
-                                                                        {/* Target Marker (The Goal) */}
-                                                                        <div className="absolute top-0 bottom-0 border-r-2 border-dashed border-slate-400 z-20" style={{ left: `${targetBarPct}%` }}></div>
-                                                                        
-                                                                        {/* Achieved Base */}
-                                                                        <div className={`absolute top-0 left-0 h-full ${tier.config.barBase}`} style={{ width: `${Math.min(targetBarPct, 100)}%` }}></div>
-                                                                        
-                                                                        {/* Achieved Over Target Segment */}
-                                                                        {emp.revenue > emp.target && (
-                                                                            <div className={`absolute top-0 h-full ${tier.config.barOver}`} style={{ left: `${targetBarPct}%`, width: `${100 - targetBarPct}%` }}>
-                                                                                <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.3) 4px, rgba(255,255,255,0.3) 8px)' }}></div>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* Mini HUD Stats */}
-                                                                    <div className={`mt-5 grid grid-cols-2 gap-3 bg-slate-950/50 rounded-xl p-3.5 border border-slate-800/80 relative overflow-hidden group-hover:bg-slate-900/80 transition-colors`}>
-                                                                        <div className={`absolute right-0 top-0 w-20 h-20 opacity-[0.08] blur-xl rounded-full ${tier.config.bgGlow1}`}></div>
-                                                                        <div>
-                                                                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center"><Icon name="Award" size={10} className={`mr-1 ${tier.config.textMain}`}/> Overachieved</p>
-                                                                            <p className={`text-[14px] font-black tabular-nums ${tier.config.textMain}`}>+{formatCurrency(overachieved)}</p>
-                                                                        </div>
-                                                                        <div>
-                                                                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center"><Icon name="Zap" size={10} className={`mr-1 ${tier.config.textSec}`}/> Multiplier</p>
-                                                                            <p className={`text-[14px] font-black tabular-nums ${tier.config.textSec}`}>{(emp.revenue / (emp.target || 1)).toFixed(2)}x Quota</p>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )})}
+                                            <div className="flex justify-between items-center pt-3 border-t border-gray-700/50">
+                                                <div><p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest flex items-center"><Icon name="ArrowUp" size={10} className="mr-1"/> Overachieved</p><p className={`text-xs font-bold ${tier.config.sub} mt-0.5`}>+{formatCurrency(overachieved)}</p></div>
+                                                <div className="text-right"><p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest flex items-center"><Icon name="Zap" size={10} className="mr-1"/> Multiplier</p><p className="text-xs font-bold text-blue-400 mt-0.5">{(emp.revenue / (emp.target || 1)).toFixed(2)}x Quota</p></div>
                                             </div>
                                         </div>
-                                    ))}
+                                    )})}
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* ROW 4: BDE Execution Ledger (Clean White Table) */}
+                        <div className="hover-card-lift animate-slide-up delay-400 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-gray-200/80 overflow-hidden relative">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-google-blue via-teal-400 to-emerald-500"></div>
+                            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                                <h3 className="text-sm font-bold text-gray-800 tracking-tight flex items-center"><Icon name="Table" size={16} className="mr-2 text-gray-400"/> BDE Execution Ledger</h3>
+                                <div className="flex items-center space-x-3">
+                                    <div className="relative">
+                                        <Icon name="Search" size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                        <input type="text" placeholder="Search associate..." className="pl-8 pr-3 py-1.5 border border-gray-200 bg-white shadow-sm text-sm focus:outline-none focus:ring-1 focus:ring-google-blue rounded-md w-48 transition-all" value={filters.search} onChange={(e) => setFilters({...filters, search: e.target.value})} />
+                                    </div>
+                                    <select className="bg-white shadow-sm border border-gray-200 rounded-md py-1.5 px-3 text-sm font-medium text-gray-700 outline-none focus:ring-1 focus:ring-google-blue transition-all" value={filters.manager} onChange={(e) => setFilters({...filters, manager: e.target.value})}>
+                                        <option value="All">All Managers</option>
+                                        {availableManagers.map(m => <option key={m} value={m}>{m}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse whitespace-nowrap">
+                                    <thead className="bg-gray-50/50 border-b border-gray-100">
+                                        <tr>
+                                            <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Associate</th>
+                                            <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Manager</th>
+                                            <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Target</th>
+                                            <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Achieved</th>
+                                            <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider w-48 text-right">Progress</th>
+                                            <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Daily Run Rate</th>
+                                            <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Rev. Required</th>
+                                            <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Overachieved</th>
+                                            <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 bg-white">
+                                        {filteredData.map((row, idx) => {
+                                            const target = Number(row.Target) || 0;
+                                            const achieved = Number(row['Sales Achieved']) || 0;
+                                            const pct = target > 0 ? (achieved / target) * 100 : 0;
+                                            const overachieved = Math.max(0, achieved - target);
+                                            const runRate = Number(row['Daily Run Rate']) || 0;
+                                            const revRequired = target > achieved ? target - achieved : 0;
+                                            
+                                            let statusConfig = { text: 'AT RISK', bg: 'bg-red-50 text-red-600 border-red-200', icon: 'TrendingDown', bar: 'bg-red-500' };
+                                            if (pct >= 100) statusConfig = { text: 'TARGET MET', bg: 'bg-emerald-50 text-emerald-600 border-emerald-200', icon: 'Award', bar: 'bg-emerald-500' };
+                                            else if (pct >= 75) statusConfig = { text: 'GOOD', bg: 'bg-blue-50 text-blue-600 border-blue-200', icon: 'TrendingUp', bar: 'bg-blue-500' };
+                                            else if (pct >= 40) statusConfig = { text: 'AVERAGE', bg: 'bg-amber-50 text-amber-600 border-amber-200', icon: 'Minus', bar: 'bg-amber-400' };
+
+                                            return (
+                                                <tr key={idx} className="hover:bg-gray-50/80 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center">
+                                                            <div className="relative shrink-0">
+                                                                <img src={getProfilePic(row['Employee Name'], row)} alt="" className="w-8 h-8 rounded-full object-cover border border-gray-300 shadow-sm" />
+                                                                {pct >= 100 && <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center"><Icon name="Award" size={8} className="text-white"/></div>}
+                                                            </div>
+                                                            <div className="ml-3 font-bold text-gray-900 text-sm tracking-tight">{row['Employee Name']}</div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-gray-500 font-medium">{row['Manager Name']}</td>
+                                                    <td className="px-6 py-4 text-sm text-gray-500 text-right tabular-nums">{formatCurrency(target)}</td>
+                                                    <td className="px-6 py-4 text-sm font-bold text-emerald-600 text-right tabular-nums">{formatCurrency(achieved)}</td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center justify-end space-x-3">
+                                                            <div className="w-24 bg-gray-100 rounded-full h-1.5 overflow-hidden"><div className={`h-1.5 rounded-full ${statusConfig.bar} animate-grow-width`} style={{width: `${Math.min(pct, 100)}%`}}></div></div>
+                                                            <span className={`text-xs font-bold ${pct >= 100 ? 'text-emerald-600' : 'text-blue-600'} tabular-nums w-12 text-right`}>{formatNumber(pct)}%</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-gray-500 text-right tabular-nums">{runRate > 0 ? formatCurrency(runRate) : '-'}</td>
+                                                    <td className="px-6 py-4 text-sm text-gray-500 text-right tabular-nums">{revRequired > 0 ? formatCurrency(revRequired) : '-'}</td>
+                                                    <td className="px-6 py-4 text-sm font-bold text-emerald-500 text-right tabular-nums">{overachieved > 0 ? `+${formatCurrency(overachieved)}` : '-'}</td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className={`inline-flex items-center px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider border ${statusConfig.bg}`}>
+                                                            <Icon name={statusConfig.icon} size={10} className="mr-1" /> {statusConfig.text}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const LoginScreen = ({ onViewerLogin, onAdminLogin, onAdminPasswordReset, adminEmails, error, setError }) => {
+            const [mode, setMode] = useState('viewer');
+            const [passcode, setPasscode] = useState('');
+            const [adminEmail, setAdminEmail] = useState('');
+            const [adminPassword, setAdminPassword] = useState('');
+            
+            const [resetEmail, setResetEmail] = useState('');
+            const [resetOtp, setResetOtp] = useState('');
+            const [actualOtp, setActualOtp] = useState(''); // Stores the real generated OTP
+            const [newAdminPwd, setNewAdminPwd] = useState('');
+            const [resetStep, setResetStep] = useState(1);
+            const [otherAdminsStr, setOtherAdminsStr] = useState('');
+            const [isSending, setIsSending] = useState(false);
+            
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (mode === 'viewer') onViewerLogin(passcode);
+                else if (mode === 'admin') onAdminLogin(adminEmail, adminPassword);
+            };
+
+            const handleForgotSubmit = async (e) => {
+                e.preventDefault();
+                if (resetStep === 1) {
+                    if (adminEmails.includes(resetEmail.toLowerCase())) {
+                        setIsSending(true);
+                        
+                        const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+                        setActualOtp(generatedOtp);
+                        
+                        try {
+                            // EMAILJS INTEGRATION: Send the OTP to the admin's email
+                            await emailjs.send(
+                                EMAILJS_SERVICE_ID,
+                                EMAILJS_TEMPLATE_ID,
+                                {
+                                    to_email: resetEmail,
+                                    email_to: resetEmail,
+                                    reply_to: resetEmail,
+                                    user_email: resetEmail,
+                                    send_to: resetEmail,
+                                    otp_code: generatedOtp,
+                                    message: "Admin Password Reset OTP"
+                                },
+                                EMAILJS_PUBLIC_KEY
+                            );
+                            setResetStep(2);
+                            setError('');
+                        } catch (err) {
+                            console.error("EmailJS Error:", err);
+                            setError(`Email error: ${err.text || 'Service ID not found'}. Check console.`);
+                        }
+                        setIsSending(false);
+                    } else {
+                        setError('Access Denied: Email is not an authorized administrator.');
+                    }
+                } else if (resetStep === 2) {
+                    if (resetOtp === actualOtp) { // Verify against the real generated OTP
+                        if (!newAdminPwd) { setError('Please enter a new password.'); return; }
+                        const success = await onAdminPasswordReset(resetEmail, newAdminPwd);
+                        if (success) {
+                            const others = adminEmails.filter(email => email !== resetEmail.toLowerCase()).join(', ');
+                            setOtherAdminsStr(others);
+                            setResetStep(3);
+                            setError('');
+                            
+                            // Send a notification email to OTHER admins that password was changed and share the new password
+                            if (others) {
+                                emailjs.send(
+                                    EMAILJS_SERVICE_ID,
+                                    EMAILJS_TEMPLATE_ID,
+                                    {
+                                        to_email: others,
+                                        email_to: others,
+                                        reply_to: others,
+                                        user_email: others,
+                                        send_to: others,
+                                        otp_code: `SECURITY ALERT: Admin password was changed by ${resetEmail}. The NEW Admin Password is: ${newAdminPwd}`,
+                                        message: "Security Alert: Admin Password Changed"
+                                    }, 
+                                    EMAILJS_PUBLIC_KEY
+                                ).catch(e => console.log("Notification failed", e));
+                            }
+                        } else {
+                            setError('Database error. Could not reset password.');
+                        }
+                    } else {
+                        setError('Invalid OTP. Please check your email again.');
+                    }
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-[#F0F2F5] font-sans">
+                    <div className="w-full max-w-[420px] px-6 animate-fade-in">
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-10 flex flex-col items-center">
+                            <img src="https://drive.google.com/thumbnail?id=16K2KHrjf4Rl9ZY2OTaeS0YSZK9klqwH4&sz=w600" alt="Company Logo" className="h-10 object-contain mb-8 blend-logo" />
+                            <h1 className="text-xl font-semibold text-gray-900 tracking-tight mb-2 text-center">Sales Performance Dashboard</h1>
+                            <p className="text-sm text-gray-500 mb-8 text-center">{mode === 'viewer' ? 'Use the shared access key' : mode === 'admin' ? 'Use administrator credentials' : 'Reset Administrator Password'}</p>
+
+                            {error && (
+                                <div className="w-full bg-red-50 text-red-600 px-4 py-3 rounded-md text-sm mb-6 flex items-start border border-red-100">
+                                    <Icon name="AlertTriangle" size={16} className="mr-2 mt-0.5 shrink-0" /><span>{error}</span>
                                 </div>
                             )}
 
-                            {/* ROW 3: Professional Execution Ledger */}
-                            <Card title="BDE Execution Ledger" bodyClass="p-0 overflow-hidden" className="animate-slide-up" style={{ animationDelay: '300ms' }}
-                                action={
-                                    <div className="flex items-center space-x-4">
-                                        <div className="relative group">
-                                            <Icon name="Search" size={14} className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-colors" />
-                                            <input type="text" placeholder="Search associate..." className="pl-9 pr-4 py-2 border border-slate-200 bg-slate-50/50 text-[13px] font-medium focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white rounded-xl w-64 transition-all placeholder:text-slate-400 shadow-sm" value={filters.search} onChange={(e) => setFilters({...filters, search: e.target.value})} />
-                                        </div>
-                                        <select className="bg-white border border-slate-200 rounded-xl py-2 px-4 text-[13px] font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-sm cursor-pointer" value={filters.manager} onChange={(e) => setFilters({...filters, manager: e.target.value})}>
-                                            <option value="All">All Managers</option>
-                                            {availableManagers.map(m => <option key={m} value={m}>{m}</option>)}
-                                        </select>
+                            {mode === 'viewer' ? (
+                                <form onSubmit={handleSubmit} className="w-full space-y-5">
+                                    <input type="password" required value={passcode} onChange={e => {setPasscode(e.target.value); setError('');}} placeholder="Enter team access key" className="w-full bg-white border border-gray-300 text-gray-900 rounded-md py-3 px-4 focus:outline-none focus:ring-2 focus:ring-google-blue focus:border-google-blue transition-all text-sm placeholder:text-gray-400" />
+                                    <button type="submit" className="w-full bg-google-blue hover:bg-google-hover text-white font-semibold py-3 px-4 rounded-md transition-colors text-sm">Continue</button>
+                                </form>
+                            ) : mode === 'admin' ? (
+                                <form onSubmit={handleSubmit} className="w-full space-y-4">
+                                    <input type="email" required value={adminEmail} onChange={e => {setAdminEmail(e.target.value); setError('');}} placeholder="Admin Email" className="w-full bg-white border border-gray-300 text-gray-900 rounded-md py-3 px-4 focus:outline-none focus:ring-2 focus:ring-google-blue transition-all text-sm" />
+                                    <input type="password" required value={adminPassword} onChange={e => {setAdminPassword(e.target.value); setError('');}} placeholder="Admin Password" className="w-full bg-white border border-gray-300 text-gray-900 rounded-md py-3 px-4 focus:outline-none focus:ring-2 focus:ring-google-blue transition-all text-sm" />
+                                    <div className="flex justify-end">
+                                        <button type="button" onClick={() => {setMode('forgot_admin'); setError(''); setResetStep(1);}} className="text-xs font-medium text-google-blue hover:underline">Forgot Password?</button>
                                     </div>
-                                }>
-                                <div className="overflow-x-auto border-t border-slate-100">
-                                    <table className="w-full text-left border-collapse whitespace-nowrap">
-                                        <thead className="bg-slate-50/80">
-                                            <tr>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200">Associate</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200">Manager</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 text-right">Target</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 text-right">Achieved</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200">Progress</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 text-right">Daily Run Rate</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 text-right">Rev. Required</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 text-right">Overachieved</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 text-center">Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100 text-[13px]">
-                                            {filteredData.length > 0 ? filteredData.map((row, idx) => {
-                                                const target = Number(row.Target) || 0;
-                                                const achieved = Number(row['Sales Achieved']) || 0;
-                                                const expected = Number(row['Expected Sales']) || 0;
-                                                const pct = target > 0 ? (achieved / target) * 100 : 0;
-                                                
-                                                const isTopAchiever = achieved >= target;
-                                                const isOnTrack = expected >= target;
-                                                const revenueRequired = Math.max(0, target - achieved);
-                                                const overachieved = Math.max(0, achieved - target);
-
-                                                return (
-                                                    <tr key={idx} className="table-row-hover bg-white">
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex items-center font-bold text-slate-900 font-display">
-                                                                <div className="relative mr-3 flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                                                                    {isTopAchiever ? (
-                                                                        <img 
-                                                                            src={getProfilePic(row['Employee Name'], row)} 
-                                                                            alt={row['Employee Name']}
-                                                                            className="w-9 h-9 rounded-full object-cover border-2 border-emerald-500 shadow-glow-emerald"
-                                                                            onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(row['Employee Name'] || 'A')}&background=10b981&color=fff&bold=true`; }}
-                                                                        />
-                                                                    ) : (
-                                                                        <img 
-                                                                            src={getProfilePic(row['Employee Name'], row)} 
-                                                                            alt={row['Employee Name']}
-                                                                            className="w-8 h-8 rounded-full object-cover border border-slate-200 opacity-70"
-                                                                            onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(row['Employee Name'] || 'A')}&background=e2e8f0&color=475569&bold=true`; }}
-                                                                        />
-                                                                    )}
-                                                                    {isTopAchiever && (
-                                                                        <div className="absolute -top-1.5 -right-1.5 bg-white rounded-full p-[2px] shadow-md z-10">
-                                                                            <Icon name="Award" size={12} className="text-emerald-500" />
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                                {row['Employee Name'] || '-'}
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-4 text-slate-500 font-medium">{row['Manager Name'] || '-'}</td>
-                                                        <td className="px-6 py-4 text-right tabular-nums text-slate-500 font-medium">{formatCurrency(target)}</td>
-                                                        <td className={`px-6 py-4 text-right tabular-nums font-bold ${isTopAchiever ? 'text-emerald-600' : 'text-slate-900'}`}>{formatCurrency(achieved)}</td>
-                                                        <td className="px-6 py-4 w-48">
-                                                            <div className="flex items-center">
-                                                                <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden mr-3">
-                                                                    <div className={`h-full rounded-full ${pct >= 100 ? 'bg-emerald-500' : pct >= 71 ? 'bg-primary-500' : pct >= 31 ? 'bg-amber-400' : 'bg-red-500'}`} style={{ width: `${Math.min(pct, 100)}%` }}></div>
-                                                                </div>
-                                                                <span className={`font-bold text-[12px] tabular-nums ${pct >= 100 ? 'text-emerald-600' : pct >= 71 ? 'text-primary-600' : pct >= 31 ? 'text-amber-600' : 'text-red-600'}`}>{formatPercent(pct)}</span>
-                                                            </div>
-                                                        </td>
-                                                        
-                                                        {/* Smart Logic applied perfectly here */}
-                                                        <td className="px-6 py-4 text-right tabular-nums">
-                                                            {isTopAchiever ? <span className="text-slate-300">-</span> : <span className="text-slate-600 font-medium">{formatCurrency(row['Daily Run Rate'])}</span>}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right tabular-nums">
-                                                            {isTopAchiever ? <span className="text-slate-300">-</span> : <span className="font-semibold text-slate-800">{formatCurrency(revenueRequired)}</span>}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right tabular-nums">
-                                                            {overachieved > 0 ? <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">+{formatCurrency(overachieved)}</span> : <span className="text-slate-300">-</span>}
-                                                        </td>
-                                                        
-                                                        {/* Clean ghost-style badges */}
-                                                        <td className="px-6 py-4 text-center">
-                                                            {pct >= 100 ? (
-                                                                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-200/60 shadow-sm"><Icon name="Award" size={12} className="mr-1.5"/> Target Met</span>
-                                                            ) : pct >= 71 ? (
-                                                                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-primary-50 text-primary-600 border border-primary-200/60 shadow-sm"><Icon name="TrendingUp" size={12} className="mr-1.5"/> Good</span>
-                                                            ) : pct >= 31 ? (
-                                                                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-200/60 shadow-sm"><Icon name="Minus" size={12} className="mr-1.5"/> Average</span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-red-50 text-red-600 border border-red-200/60 shadow-sm"><Icon name="TrendingDown" size={12} className="mr-1.5"/> At Risk</span>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            }) : (
-                                                <tr><td colSpan="9" className="px-6 py-16 text-center text-slate-400 text-sm font-medium">No ledger entries match criteria.</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
+                                    <button type="submit" className="w-full bg-google-blue hover:bg-google-hover text-white font-semibold py-3 px-4 rounded-md transition-colors text-sm mt-2">Verify Admin</button>
+                                </form>
+                            ) : (
+                                <div className="w-full">
+                                    {resetStep === 1 && (
+                                        <form onSubmit={handleForgotSubmit} className="space-y-4">
+                                            <p className="text-xs text-gray-500 mb-2">Enter your admin email to receive a password reset OTP.</p>
+                                            <input type="email" required value={resetEmail} onChange={e => {setResetEmail(e.target.value); setError('');}} placeholder="Admin Email" className="w-full bg-white border border-gray-300 text-gray-900 rounded-md py-3 px-4 focus:outline-none focus:ring-2 focus:ring-google-blue transition-all text-sm" />
+                                            <button type="submit" disabled={isSending} className="w-full bg-google-blue hover:bg-google-hover disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-md transition-colors text-sm">
+                                                {isSending ? 'Sending OTP to your email...' : 'Send Reset OTP'}
+                                            </button>
+                                        </form>
+                                    )}
+                                    {resetStep === 2 && (
+                                        <form onSubmit={handleForgotSubmit} className="space-y-4">
+                                            <div className="bg-green-50 text-green-700 px-3 py-2 rounded-md text-xs mb-2 border border-green-100">Real OTP has been sent to {resetEmail}</div>
+                                            <input type="text" required value={resetOtp} onChange={e => {setResetOtp(e.target.value); setError('');}} placeholder="Enter 6-digit OTP from Email" maxLength="6" className="w-full bg-white border border-gray-300 text-gray-900 rounded-md py-3 px-4 focus:outline-none focus:ring-2 focus:ring-google-blue transition-all text-sm text-center tracking-widest" />
+                                            <input type="password" required value={newAdminPwd} onChange={e => {setNewAdminPwd(e.target.value); setError('');}} placeholder="Create New Admin Password" className="w-full bg-white border border-gray-300 text-gray-900 rounded-md py-3 px-4 focus:outline-none focus:ring-2 focus:ring-google-blue transition-all text-sm" />
+                                            <button type="submit" className="w-full bg-google-blue hover:bg-google-hover text-white font-semibold py-3 px-4 rounded-md transition-colors text-sm">Verify OTP & Change Password</button>
+                                        </form>
+                                    )}
+                                    {resetStep === 3 && (
+                                        <div className="text-center space-y-4">
+                                            <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-2"><Icon name="CheckCircle" size={24} /></div>
+                                            <h3 className="text-base font-bold text-gray-900">Password Reset Successful</h3>
+                                            <div className="bg-blue-50 border border-blue-100 text-blue-800 text-xs p-3 rounded-md text-left">
+                                                <strong>Email Notification Sent:</strong><br/>
+                                                An automated email containing the new password has been dispatched to other administrators: <br/><span className="font-semibold">{otherAdminsStr || 'No other admins'}</span>.
+                                            </div>
+                                            <button type="button" onClick={() => {setMode('admin'); setAdminEmail(resetEmail); setAdminPassword(newAdminPwd); setResetStep(1);}} className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-md transition-colors text-sm">Back to Login</button>
+                                        </div>
+                                    )}
                                 </div>
-                            </Card>
+                            )}
+                        </div>
+                        <div className="mt-6 text-center">
+                            <button type="button" onClick={() => {setMode(mode === 'viewer' || mode === 'forgot_admin' ? 'admin' : 'viewer'); setError('');}} className="text-sm font-medium text-google-blue hover:text-google-hover transition-colors">
+                                {mode === 'viewer' || mode === 'forgot_admin' ? 'Sign in as Administrator' : 'Return to viewer login'}
+                            </button>
                         </div>
                     </div>
-                );
+                </div>
+            );
+        };
+
+        const AdminPanel = ({ authConfig, onClose, adminEmail, adminEmails }) => {
+            const [newPassword, setNewPassword] = useState('');
+            const [statusMsg, setStatusMsg] = useState({ text: '', type: '' });
+            const [showOtpStep, setShowOtpStep] = useState(false);
+            const [otpInput, setOtpInput] = useState('');
+            const [actualOtp, setActualOtp] = useState(''); // Store real OTP
+            const [updateSuccess, setUpdateSuccess] = useState(false);
+            const [isSending, setIsSending] = useState(false);
+
+            const handleInitiateUpdate = async (e) => {
+                e.preventDefault(); if (!newPassword) return;
+                setIsSending(true);
+                
+                const publicKey = "UfJGx42L-EKqI6hpA";
+
+                const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+                setActualOtp(generatedOtp);
+
+                try {
+                    // EMAILJS INTEGRATION: Send the OTP to the admin's email
+                    await emailjs.send(
+                        EMAILJS_SERVICE_ID,
+                        EMAILJS_TEMPLATE_ID,
+                        {
+                            to_email: adminEmail,
+                            email_to: adminEmail,
+                            reply_to: adminEmail,
+                            user_email: adminEmail,
+                            send_to: adminEmail,
+                            otp_code: generatedOtp,
+                            message: "Shared Password Change OTP"
+                        },
+                        EMAILJS_PUBLIC_KEY
+                    );
+                    setShowOtpStep(true);
+                    setStatusMsg({ text: `OTP successfully sent to ${adminEmail}`, type: 'success' });
+                } catch (err) {
+                    console.error("EmailJS Error:", err);
+                    setStatusMsg({ text: `Email error: ${err.text || 'Check Service ID'}`, type: 'error' });
+                }
+                setIsSending(false);
             };
 
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(<App />);
-        </script>
-    </body>
-    </html>
+            const handleVerifyAndSave = async (e) => {
+                e.preventDefault();
+                if (otpInput !== actualOtp) { setStatusMsg({ text: 'Invalid OTP. Check your email.', type: 'error' }); return; }
+                if (!window.firebaseDeps) return;
+                try {
+                    const configRef = window.firebaseDeps.doc(db, 'artifacts', typeof __app_id !== 'undefined' ? __app_id : 'sales-dashboard-auth', 'public', 'data', 'settings', 'auth_config');
+                    await window.firebaseDeps.updateDoc(configRef, { sharedPassword: newPassword });
+                    setUpdateSuccess(true);
+                    setStatusMsg({ text: '', type: '' });
+
+                    // Optional: Send a notification email to OTHER admins that shared password was changed
+                    const otherAdmins = adminEmails.filter(e => e !== adminEmail).join(', ');
+                    if (otherAdmins) {
+                        emailjs.send(
+                            EMAILJS_SERVICE_ID,
+                            EMAILJS_TEMPLATE_ID,
+                            {
+                                to_email: otherAdmins,
+                                email_to: otherAdmins,
+                                reply_to: otherAdmins,
+                                user_email: otherAdmins,
+                                send_to: otherAdmins,
+                                otp_code: `SECURITY ALERT: The Shared Viewer Password was changed by ${adminEmail}. The NEW Shared Viewer Password is: ${newPassword}`,
+                                message: "Security Alert: Shared Password Changed"
+                            }, 
+                            EMAILJS_PUBLIC_KEY
+                        ).catch(e => console.log("Notification failed", e));
+                    }
+
+                } catch (err) { setStatusMsg({ text: 'Database error.', type: 'error' }); }
+            };
+
+            const otherAdminsStr = adminEmails ? adminEmails.filter(e => e !== adminEmail).join(', ') : '';
+
+            const copyToClipboard = () => {
+                navigator.clipboard.writeText(newPassword);
+                alert("New password copied! You can now share this with the team.");
+                onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-fade-in">
+                    <div className="w-full max-w-md bg-white rounded-xl shadow-xl overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <h2 className="text-base font-semibold text-gray-900">Security Settings</h2>
+                            {!updateSuccess && <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><Icon name="X" size={20} /></button>}
+                        </div>
+                        <div className="p-6">
+                            {updateSuccess ? (
+                                <div className="text-center py-4">
+                                    <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4"><Icon name="CheckCircle" size={32} /></div>
+                                    <h3 className="text-lg font-bold text-gray-900 mb-2">Password Updated!</h3>
+                                    <p className="text-sm text-gray-500 mb-3">The dashboard is now locked. Users must use the new password below to enter.</p>
+                                    <div className="bg-gray-100 p-4 rounded-lg text-lg font-mono tracking-wider font-bold text-gray-800 mb-4 border border-gray-200">{newPassword}</div>
+                                    
+                                    <div className="bg-blue-50 border border-blue-100 text-blue-800 text-xs p-3 rounded-md text-left mb-6">
+                                        <strong>Simulation: Email Dispatched</strong><br/>
+                                        An automated email with the new shared password has been sent to the other administrator(s): <br/><span className="font-semibold">{otherAdminsStr || 'None'}</span>
+                                    </div>
+
+                                    <button onClick={copyToClipboard} className="w-full bg-google-blue hover:bg-google-hover text-white font-semibold py-3 rounded-md text-sm transition-colors flex items-center justify-center"><Icon name="Copy" size={16} className="mr-2"/> Copy & Share</button>
+                                </div>
+                            ) : (
+                                <>
+                                    <h3 className="text-sm font-semibold text-gray-900 mb-1">Change Shared Password</h3>
+                                    <p className="text-xs text-gray-500 mb-5">Updating this locks out old users immediately.</p>
+                                    
+                                    {statusMsg.text && <div className={`px-3 py-2 rounded-md text-xs mb-5 flex items-start ${statusMsg.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}><span>{statusMsg.text}</span></div>}
+
+                                    {!showOtpStep ? (
+                                        <form onSubmit={handleInitiateUpdate} className="space-y-4">
+                                            <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
+                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Current Password</label>
+                                                <div className="text-sm font-mono text-gray-700">{authConfig?.sharedPassword || 'Loading...'}</div>
+                                            </div>
+                                            <input type="text" required placeholder="New shared password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full bg-white border border-gray-300 text-gray-900 rounded-md py-2.5 px-3 focus:ring-2 focus:ring-google-blue focus:border-google-blue text-sm" />
+                                            <button type="submit" disabled={isSending} className="w-full bg-google-blue hover:bg-google-hover disabled:bg-gray-400 text-white font-semibold py-2.5 rounded-md text-sm transition-colors">
+                                                {isSending ? 'Sending OTP to Email...' : 'Send Verify OTP'}
+                                            </button>
+                                        </form>
+                                    ) : (
+                                        <form onSubmit={handleVerifyAndSave} className="space-y-4">
+                                            <input type="text" required placeholder="Enter 6-digit OTP" value={otpInput} onChange={e => setOtpInput(e.target.value)} className="w-full bg-white border border-gray-300 text-gray-900 rounded-md py-2.5 px-3 focus:ring-2 focus:ring-google-blue text-center tracking-[0.5em] text-lg" maxLength="6" />
+                                            <div className="flex space-x-3">
+                                                <button type="button" onClick={() => setShowOtpStep(false)} className="w-1/3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-md text-sm">Cancel</button>
+                                                <button type="submit" className="w-2/3 bg-google-blue hover:bg-google-hover text-white font-semibold py-2.5 rounded-md text-sm">Update Password</button>
+                                            </div>
+                                        </form>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [authState, setAuthState] = useState('loading'); 
+            const [userRole, setUserRole] = useState(null); 
+            const [authConfig, setAuthConfig] = useState(null);
+            const [loginError, setLoginError] = useState('');
+            const [showAdminPanel, setShowAdminPanel] = useState(false);
+            const [currentAdminEmail, setCurrentAdminEmail] = useState('');
+
+            // ADD YOUR ADMIN EMAILS HERE
+            const ADMIN_EMAILS = ['rajenpatwari1234@gmail.com', 'krishnaofficial073@gmail.com'];
+
+            useEffect(() => {
+                let unsubscribe = null;
+                const setup = async () => {
+                    const success = await initFirebase();
+                    if (success && window.firebaseDeps) {
+                        const { doc, setDoc, onSnapshot } = window.firebaseDeps;
+                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'sales-dashboard-auth';
+                        const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'auth_config');
+                        
+                        unsubscribe = onSnapshot(configRef, async (docSnap) => {
+                            if (!docSnap.exists()) await setDoc(configRef, { sharedPassword: 'dashboard123', adminPassword: 'admin' });
+                            else {
+                                setAuthConfig(docSnap.data());
+                                if (authState === 'loading') setAuthState('login');
+                            }
+                        }, () => { setLoginError("Could not connect to secure backend."); setAuthState('login'); });
+                    } else { setLoginError("Security failed."); setAuthState('login'); }
+                };
+                setup();
+                return () => { if (unsubscribe) unsubscribe(); };
+            }, []);
+
+            const handleViewerLogin = (pwd) => {
+                if (authConfig && pwd === authConfig.sharedPassword) { setUserRole('viewer'); setAuthState('dashboard'); setLoginError(''); }
+                else setLoginError("Incorrect password.");
+            };
+
+            const handleAdminLogin = (email, pwd) => {
+                if (ADMIN_EMAILS.includes(email.toLowerCase()) && authConfig && pwd === authConfig.adminPassword) {
+                    setUserRole('admin'); setCurrentAdminEmail(email.toLowerCase()); setAuthState('dashboard'); setLoginError('');
+                } else setLoginError("Invalid Administrator credentials.");
+            };
+
+            const handleAdminPasswordReset = async (email, newPwd) => {
+                if (!window.firebaseDeps) return false;
+                try {
+                    const configRef = window.firebaseDeps.doc(db, 'artifacts', typeof __app_id !== 'undefined' ? __app_id : 'sales-dashboard-auth', 'public', 'data', 'settings', 'auth_config');
+                    await window.firebaseDeps.updateDoc(configRef, { adminPassword: newPwd });
+                    return true;
+                } catch (err) { return false; }
+            };
+
+            if (authState === 'loading') return <div className="flex h-screen items-center justify-center bg-[#F0F2F5] flex-col"><div className="w-10 h-10 border-4 border-gray-200 border-t-google-blue rounded-full animate-spin mb-4"></div></div>;
+            if (authState === 'login') return <LoginScreen onViewerLogin={handleViewerLogin} onAdminLogin={handleAdminLogin} onAdminPasswordReset={handleAdminPasswordReset} adminEmails={ADMIN_EMAILS} error={loginError} setError={setLoginError} />;
+
+            return (
+                <div>
+                    {showAdminPanel && userRole === 'admin' && <AdminPanel authConfig={authConfig} onClose={() => setShowAdminPanel(false)} adminEmail={currentAdminEmail} adminEmails={ADMIN_EMAILS} />}
+                    <Dashboard userRole={userRole} currentUser="User" onLogout={() => {setUserRole(null); setCurrentAdminEmail(''); setAuthState('login'); setLoginError(''); setShowAdminPanel(false);}} onOpenAdmin={() => setShowAdminPanel(true)} />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
