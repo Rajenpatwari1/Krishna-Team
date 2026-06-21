@@ -1188,7 +1188,7 @@
             const [currentAdminEmail, setCurrentAdminEmail] = useState(savedSession?.adminEmail || '');
 
             // ADD YOUR ADMIN EMAILS HERE
-            const ADMIN_EMAILS = ['rajenpatwari1234@gmail.com', 'krishnaofficial073@gmail.com','ananykhare04@gmail.com'];
+            const ADMIN_EMAILS = ['rajenpatwari1234@gmail.com', 'krishnaofficial073@gmail.com'];
             const saveSession = (role, email) => { try { sessionStorage.setItem('dash_session', JSON.stringify({ userRole: role, adminEmail: email || '' })); } catch(e) {} };
             const clearSession = () => { try { sessionStorage.removeItem('dash_session'); } catch(e) {} };
 
