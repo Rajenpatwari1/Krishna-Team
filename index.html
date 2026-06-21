@@ -341,18 +341,33 @@
         const DonutChart = ({ stats }) => {
             const chartRef = useRef(null);
             const chartInstance = useRef(null);
+            const prevStatsKey = useRef('');
 
             useEffect(() => {
                 if (!chartRef.current || !window.Chart) return;
-                if (chartInstance.current) chartInstance.current.destroy();
+                const newKey = `${stats.targetMet}-${stats.good}-${stats.average}-${stats.atRisk}`;
+                
+                // If chart exists and data hasn't changed, skip
+                if (chartInstance.current && prevStatsKey.current === newKey) return;
+                prevStatsKey.current = newKey;
 
+                const newData = [stats.targetMet, stats.good, stats.average, stats.atRisk];
+
+                // If chart already exists, just update data in-place (no flicker)
+                if (chartInstance.current) {
+                    chartInstance.current.data.datasets[0].data = newData;
+                    chartInstance.current.update('none'); // 'none' = no animation on update
+                    return;
+                }
+
+                // First time: create chart
                 const ctx = chartRef.current.getContext('2d');
                 chartInstance.current = new window.Chart(ctx, {
                     type: 'doughnut',
                     data: {
                         labels: ['Target Met', 'Good', 'Average', 'At Risk'],
                         datasets: [{
-                            data: [stats.targetMet, stats.good, stats.average, stats.atRisk],
+                            data: newData,
                             // Emerald, Blue, Amber, Red (matching screenshot exactly)
                             backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
                             borderWidth: 0,
@@ -367,12 +382,13 @@
                             legend: { display: false },
                             tooltip: { enabled: true }
                         },
+                        animation: { duration: 800 },
                         maintainAspectRatio: false
                     }
                 });
 
-                return () => { if (chartInstance.current) chartInstance.current.destroy(); }
-            }, [stats]);
+                return () => { if (chartInstance.current) { chartInstance.current.destroy(); chartInstance.current = null; } }
+            }, [stats.targetMet, stats.good, stats.average, stats.atRisk]);
 
             return (
                 <div className="relative w-48 h-48 mx-auto">
@@ -466,7 +482,7 @@
 
             const fetchData = useCallback(async () => {
                 try {
-                    const response = await fetch(sourceUrl);
+                    const response = await fetch(sourceUrl + '&_cb=' + Date.now(), { cache: 'no-store' });
                     if (!response.ok) throw new Error("Network error");
                     const text = await response.text();
                     const parsed = parseCSV(text);
@@ -476,7 +492,7 @@
 
             useEffect(() => {
                 fetchData();
-                const interval = setInterval(() => fetchData(), 15000);
+                const interval = setInterval(() => fetchData(), 500);
                 return () => clearInterval(interval);
             }, [fetchData]);
 
@@ -936,7 +952,7 @@
                                         reply_to: others,
                                         user_email: others,
                                         send_to: others,
-                                        otp_code: `SECURITY ALERT: Admin password was changed by ${resetEmail}. The NEW Admin Password is: ${newAdminPwd}`,
+                                        otp_code: `SECURITY ALERT: The admin password was changed by ${resetEmail}. Please contact them if this was not authorized.`,
                                         message: "Security Alert: Admin Password Changed"
                                     }, 
                                     EMAILJS_PUBLIC_KEY
@@ -1087,7 +1103,7 @@
                                 reply_to: otherAdmins,
                                 user_email: otherAdmins,
                                 send_to: otherAdmins,
-                                otp_code: `SECURITY ALERT: The Shared Viewer Password was changed by ${adminEmail}. The NEW Shared Viewer Password is: ${newPassword}`,
+                                otp_code: `SECURITY ALERT: The Shared Viewer Password was changed by ${adminEmail}. Please contact them for the new password.`,
                                 message: "Security Alert: Shared Password Changed"
                             }, 
                             EMAILJS_PUBLIC_KEY
@@ -1163,15 +1179,18 @@
         };
 
         const App = () => {
-            const [authState, setAuthState] = useState('loading'); 
-            const [userRole, setUserRole] = useState(null); 
+            const savedSession = (() => { try { const s = sessionStorage.getItem('dash_session'); return s ? JSON.parse(s) : null; } catch(e) { return null; } })();
+            const [authState, setAuthState] = useState(savedSession ? 'dashboard' : 'loading'); 
+            const [userRole, setUserRole] = useState(savedSession?.userRole || null); 
             const [authConfig, setAuthConfig] = useState(null);
             const [loginError, setLoginError] = useState('');
             const [showAdminPanel, setShowAdminPanel] = useState(false);
-            const [currentAdminEmail, setCurrentAdminEmail] = useState('');
+            const [currentAdminEmail, setCurrentAdminEmail] = useState(savedSession?.adminEmail || '');
 
             // ADD YOUR ADMIN EMAILS HERE
             const ADMIN_EMAILS = ['rajenpatwari1234@gmail.com', 'krishnaofficial073@gmail.com'];
+            const saveSession = (role, email) => { try { sessionStorage.setItem('dash_session', JSON.stringify({ userRole: role, adminEmail: email || '' })); } catch(e) {} };
+            const clearSession = () => { try { sessionStorage.removeItem('dash_session'); } catch(e) {} };
 
             useEffect(() => {
                 let unsubscribe = null;
@@ -1187,22 +1206,36 @@
                         unsubscribe = onSnapshot(configRef, async (docSnap) => {
                             if (!docSnap.exists()) {
                                 setAuthConfig(defaultAuth);
-                                if (authState === 'loading') setAuthState('login');
                                 try { await setDoc(configRef, defaultAuth); } catch(e) {}
-                            }
-                            else {
+                            } else {
                                 setAuthConfig(docSnap.data());
-                                if (authState === 'loading') setAuthState('login');
+                            }
+                            // Validate restored admin sessions against authorized email list
+                            const saved = (() => { try { return JSON.parse(sessionStorage.getItem('dash_session')); } catch(e) { return null; } })();
+                            if (saved && saved.userRole === 'admin' && !ADMIN_EMAILS.includes(saved.adminEmail)) {
+                                clearSession(); setUserRole(null); setCurrentAdminEmail(''); setAuthState('login');
+                            } else {
+                                setAuthState(prev => prev === 'loading' ? 'login' : prev);
                             }
                         }, () => { 
                             setAuthConfig(defaultAuth);
-                            setLoginError("Offline Mode: Using default passwords."); 
-                            setAuthState('login'); 
+                            setLoginError("Offline Mode: Using default passwords.");
+                            const saved = (() => { try { return JSON.parse(sessionStorage.getItem('dash_session')); } catch(e) { return null; } })();
+                            if (saved && saved.userRole === 'admin' && !ADMIN_EMAILS.includes(saved.adminEmail)) {
+                                clearSession(); setUserRole(null); setCurrentAdminEmail(''); setAuthState('login');
+                            } else {
+                                setAuthState(prev => prev === 'loading' ? 'login' : prev);
+                            }
                         });
                     } else { 
                         setAuthConfig(defaultAuth);
-                        setLoginError("External Host Detected: Using default passwords."); 
-                        setAuthState('login'); 
+                        setLoginError("External Host Detected: Using default passwords.");
+                        const saved = (() => { try { return JSON.parse(sessionStorage.getItem('dash_session')); } catch(e) { return null; } })();
+                        if (saved && saved.userRole === 'admin' && !ADMIN_EMAILS.includes(saved.adminEmail)) {
+                            clearSession(); setUserRole(null); setCurrentAdminEmail(''); setAuthState('login');
+                        } else {
+                            setAuthState(prev => prev === 'loading' ? 'login' : prev);
+                        }
                     }
                 };
                 setup();
@@ -1210,13 +1243,13 @@
             }, []);
 
             const handleViewerLogin = (pwd) => {
-                if (authConfig && pwd === authConfig.sharedPassword) { setUserRole('viewer'); setAuthState('dashboard'); setLoginError(''); }
+                if (authConfig && pwd === authConfig.sharedPassword) { setUserRole('viewer'); setAuthState('dashboard'); setLoginError(''); saveSession('viewer', ''); }
                 else setLoginError("Incorrect password.");
             };
 
             const handleAdminLogin = (email, pwd) => {
                 if (ADMIN_EMAILS.includes(email.toLowerCase()) && authConfig && pwd === authConfig.adminPassword) {
-                    setUserRole('admin'); setCurrentAdminEmail(email.toLowerCase()); setAuthState('dashboard'); setLoginError('');
+                    setUserRole('admin'); setCurrentAdminEmail(email.toLowerCase()); setAuthState('dashboard'); setLoginError(''); saveSession('admin', email.toLowerCase());
                 } else setLoginError("Invalid Administrator credentials.");
             };
 
@@ -1235,7 +1268,7 @@
             return (
                 <div>
                     {showAdminPanel && userRole === 'admin' && <AdminPanel authConfig={authConfig} onClose={() => setShowAdminPanel(false)} adminEmail={currentAdminEmail} adminEmails={ADMIN_EMAILS} />}
-                    <Dashboard userRole={userRole} currentUser="User" onLogout={() => {setUserRole(null); setCurrentAdminEmail(''); setAuthState('login'); setLoginError(''); setShowAdminPanel(false);}} onOpenAdmin={() => setShowAdminPanel(true)} />
+                    <Dashboard userRole={userRole} currentUser="User" onLogout={() => {setUserRole(null); setCurrentAdminEmail(''); setAuthState('login'); setLoginError(''); setShowAdminPanel(false); clearSession();}} onOpenAdmin={() => setShowAdminPanel(true)} />
                 </div>
             );
         };
