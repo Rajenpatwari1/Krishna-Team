@@ -206,7 +206,23 @@
             const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== '');
             if (lines.length < 2) return [];
             
-            let headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+            // Robust CSV line parser that respects empty cells, commas, and quotes
+            const parseLine = (line) => {
+                const result = [];
+                let cell = '';
+                let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const c = line[i];
+                    if (c === '"' && line[i+1] === '"') { cell += '"'; i++; } // Handle escaped quotes
+                    else if (c === '"') { inQuotes = !inQuotes; }
+                    else if (c === ',' && !inQuotes) { result.push(cell); cell = ''; }
+                    else { cell += c; }
+                }
+                result.push(cell);
+                return result;
+            };
+
+            let headers = parseLine(lines[0]).map(h => h.trim().replace(/^"|"$/g, ''));
             // Handle duplicate headers like Remaining -> Remaining_2
             let seen = {};
             headers = headers.map(h => {
@@ -216,7 +232,7 @@
             });
 
             return lines.slice(1).map(line => {
-                const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+                const values = parseLine(line);
                 const obj = {};
                 headers.forEach((header, i) => {
                     let val = values[i] ? values[i].replace(/^"|"$/g, '').trim() : '';
@@ -636,7 +652,7 @@
 
             useEffect(() => {
                 if (!chartRef.current || !window.Chart) return;
-                const newKey = `${stats.targetMet}-${stats.good}-${stats.average}-${stats.atRisk}`;
+                const newKey = `${stats.targetMet}-${stats.good}-${stats.average}-${stats.atRisk}-${stats.total}`;
                 if (chartInstance.current && prevStatsKey.current === newKey) return;
                 prevStatsKey.current = newKey;
 
@@ -890,6 +906,7 @@
                 filteredData.forEach(emp => {
                     const achieved = Number(emp['Sales Achieved']) || 0;
                     const target = Number(emp.Target) || 0;
+                    // STRICT RULE: Must have more than 0 achieved AND more than 0 target to be Top BDE
                     if (achieved > 0 && target > 0) {
                         const pct = (achieved / target) * 100;
                         if (pct > topEmpPct) { topEmpPct = pct; topEmp = emp; }
@@ -907,6 +924,7 @@
 
                 let topMgr = null, topMgrPct = -1;
                 Object.keys(mgrStats).forEach(mgr => {
+                    // STRICT RULE: Manager must have more than 0 achieved to be Top Manager
                     if (mgrStats[mgr].achieved > 0 && mgrStats[mgr].target > 0) {
                         const pct = (mgrStats[mgr].achieved / mgrStats[mgr].target) * 100;
                         if (pct > topMgrPct) { topMgrPct = pct; topMgr = mgr; }
@@ -921,16 +939,20 @@
             }, [filteredData]);
 
             const performanceStats = useMemo(() => {
-                const stats = { targetMet: 0, good: 0, average: 0, atRisk: 0, total: filteredData.length };
+                const stats = { targetMet: 0, good: 0, average: 0, atRisk: 0, total: 0 };
+                
                 filteredData.forEach(row => {
                     const target = Number(row.Target) || 0;
                     const achieved = Number(row['Sales Achieved']) || 0;
                     const pct = target > 0 ? (achieved / target) * 100 : 0;
+                    
                     if (pct >= 100) stats.targetMet++;
                     else if (pct >= 75) stats.good++;
                     else if (pct >= 40) stats.average++;
                     else stats.atRisk++;
                 });
+                
+                stats.total = filteredData.length;
                 return stats;
             }, [filteredData]);
 
